@@ -81,10 +81,8 @@ void get_nickname(int client_fd,struct Session* current_session) {
 }
 
 void send_themes(int client_fd,struct Session* current_session) {
-  //char nthemes[sizeof(int)];//4 byte
+//manda un messaggio al client con il numero di temi e aspetta un feedback sulla ricezione di quest'ultimo
   char msg[MSG_LEN];
-  //memcpy(nthemes, &current_session->num_themes, sizeof(current_session->num_themes));
-  /*snprintf(nthemes, sizeof(nthemes), "%d", current_session->num_themes);*/
   printf("numero di temi: %d\n", current_session->num_themes);
 
   if(send(client_fd, &current_session->num_themes, sizeof(&current_session->num_themes), 0) == -1) {
@@ -102,6 +100,21 @@ void send_themes(int client_fd,struct Session* current_session) {
     if(strcmp(msg,MSG_OK)) {
       printf("numero temi ok\n");
       //ciclo per mandare il nome di tutti i temi disponibili
+      for(int i = 0 ; i < current_session->num_themes ; i++) {
+        if(send(client_fd, &current_session->availableThemes[i],MAXCHAR_THEME, 0) == -1) {
+        perror("Errore in send() del nome del tema %s", current_session->availableThemes[i]);
+        exit(EXIT_FAILURE);
+        }
+        ssize_t bytes_received = recv(client_fd, msg, MSG_LEN, 0);
+    
+        if(bytes_received == -1) {
+          perror("Errore in recv() di conferma della recezione del nome del tema");
+          exit(EXIT_FAILURE);
+        }
+        if(strcmp(msg,MSG_NO))
+          i--;//così viene rimandato lo stesso tema
+      }
+      
     }
 }
 

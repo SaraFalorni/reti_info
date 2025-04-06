@@ -8,6 +8,7 @@
 
 #define MAXCHAR_LINE 1024
 #define MAXCHAR_NICKNAME 20
+#define MAXCHAR_THEME 30
 #define MSG_SIZE 100 //?? messo a caso da rivedere con qualche criterio
 #define BACKLOG 5
 #define MSG_LEN 2

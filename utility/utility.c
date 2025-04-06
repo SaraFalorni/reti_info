@@ -166,7 +166,7 @@ void get_theme_name(int num, char* buf) {
   int len = strlen(buf);
   
   if(len > 0 && buf[len-1] == '\n') {
-    buf[len-1] == '\0';
+    buf[len-1] = '\0';
   }
   if(len > 0 && buf[len-2] == '\r') {
     buf[len-2] = '\0';

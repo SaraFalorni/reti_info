@@ -3,9 +3,7 @@
 int main(int argc, char *argv[]) {
     int client_fd;
     struct sockaddr_in server_addr;
-    char buffer[MSG_SIZE];
     char *server_ip = "127.0.0.1";
-    int port = 8080;//??
 
     if(argc != 2) {
         //qualche printf che spieghi

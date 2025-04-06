@@ -83,7 +83,6 @@ void showQuizThemes(int client_fd) {
 
   if(num_themes > 0) {   
     //messaggio di ok al server
-    printf("(client) entra nell'if di num_themes > 0\n");
     if(send(client_fd, MSG_OK, MSG_LEN, 0) == -1) {
       perror("Errore in send() dell'ok alla ricezione del numero di temi");
       exit(EXIT_FAILURE);
@@ -98,4 +97,17 @@ void showQuizThemes(int client_fd) {
   }
   
   //server inizia a mandare i nomi dei temi disponibili 
+  char **themes = (char **)malloc(num_themes * sizeof(char*));
+  ssize_t bytes_received = recv(client_fd, &num_themes, MAXCHAR_THEME, 0);
+  
+  if(bytes_received == -1) {
+    perror("Errore in recv() per il numero di temi disponibili");
+    exit(EXIT_FAILURE);
+  }
+
+    //messaggio di ok al server per sincronizzarli
+    if(send(client_fd, MSG_OK, MSG_LEN, 0) == -1) {
+      perror("Errore in send() dell'ok alla ricezione del nome del tema");
+      exit(EXIT_FAILURE);
+    }  
 }
