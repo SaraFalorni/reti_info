@@ -71,7 +71,6 @@ void exitGame() {
 
 void showQuizThemes(int client_fd) {
 //riceve il numero di temi disponibili dal server
-  //char nthemes[sizeof(int)];
   int num_themes;
   
   ssize_t bytes_received = recv(client_fd, &num_themes, sizeof(num_themes), 0);
@@ -80,34 +79,66 @@ void showQuizThemes(int client_fd) {
     perror("Errore in recv() per il numero di temi disponibili");
     exit(EXIT_FAILURE);
   }
-
-  if(num_themes > 0) {   
-    //messaggio di ok al server
-    if(send(client_fd, MSG_OK, MSG_LEN, 0) == -1) {
-      perror("Errore in send() dell'ok alla ricezione del numero di temi");
-      exit(EXIT_FAILURE);
-    }    
-  }
+  printf("numero temi ricevuti client %d\n",num_themes);
+   
+  //messaggio di ok al server per sincronizzazione
+  if(send(client_fd, MSG_OK, MSG_LEN, 0) == -1) {
+    perror("Errore in send() dell'ok alla ricezione del numero di temi\n");
+    exit(EXIT_FAILURE);
+  }   
+  printf("client manda segnale ricezione\n");
+  /*
   else {
     //messaggio non ok al server
     if(send(client_fd, MSG_NO, MSG_LEN, 0) == -1) {
       perror("Errore in send() del no alla ricezione del numero di temi");
       exit(EXIT_FAILURE);
-    } 
-  }
+    } */
   
+  printf("numero di temi ok\n"); //da cancellare
   //server inizia a mandare i nomi dei temi disponibili 
-  char **themes = (char **)malloc(num_themes * sizeof(char*));
-  ssize_t bytes_received = recv(client_fd, &num_themes, MAXCHAR_THEME, 0);
+  char themes[num_themes][MAXCHAR_THEME];
+  for(int i = 0; i < num_themes ; i++) {
+    ssize_t bytes_received = recv(client_fd, &themes[i], MAXCHAR_THEME, 0);
   
-  if(bytes_received == -1) {
-    perror("Errore in recv() per il numero di temi disponibili");
-    exit(EXIT_FAILURE);
-  }
-
+    if(bytes_received == -1) {
+      perror("Errore in recv() per il numero di temi disponibili");
+      exit(EXIT_FAILURE);
+    }
+    printf("nome tema ricevuto: %s\n",themes[i] );
     //messaggio di ok al server per sincronizzarli
     if(send(client_fd, MSG_OK, MSG_LEN, 0) == -1) {
       perror("Errore in send() dell'ok alla ricezione del nome del tema");
       exit(EXIT_FAILURE);
-    }  
+    } 
+  }
+   printf("nomi dei temi ok"); //da cancellare
+  //dopo aver ottenuto i nomi di tutti i temi disponibili li stampa a video
+  int choice = 0;
+    printf("Quiz disponibili\n");
+
+    for(int i = 0 ; i < 20; i++)
+        printf("+");
+    
+    for(int i = 0; i < num_themes ; i++) {
+      printf("%d - %s\n", i+1, themes[i]);
+    }
+        
+    for(int i = 0 ; i < 20; i++)
+        printf("+");
+    do {
+        printf("\nLa tua scelta:  ");
+
+
+        scanf("%d", &choice);
+
+        if(choice > num_themes || choice <= 0) {
+            printf("scelta non valida, devi inserire un numero tra quelli associati ai temi disponibili\n");
+
+            while(getchar() != '\n');
+        }
+
+    } while(choice > num_themes || choice <= 0);
+
+    printf("scelta fatta (ancora da inviare al server) : %d cioè %s\n", choice, themes[choice]);    
 }
