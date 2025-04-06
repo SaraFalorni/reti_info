@@ -1,0 +1,5 @@
+Quale fiume attraversa la città di Budapest?=DANUBIO
+Qual è l’isola più grande del Pacifico?=GROENLANDIA|GREENLAND
+Quale paese ha la maggiore superficie territoriale al mondo?=RUSSIA
+Qual è il fiume più lungo del mondo?=NILO|FIUME NILO
+In quale oceano si trova l'Isola di Hawaii?=PACIFICO|OCEANO PACIFICO
