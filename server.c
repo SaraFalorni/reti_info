@@ -46,9 +46,10 @@ int main(int argc, char *argv[]) {
         printf("client connesso..\n");
         
         //il primo msg che riceve è il nickname
-        get_nickname(client_fd,&current_session);
+        char nickname[MAXCHAR_NICKNAME];
+        get_nickname(client_fd,&current_session,nickname);
         //una volta registrato il nuovo giocatore invia i temi disponibili
-        send_themes(client_fd, &current_session);
+        send_themes(client_fd, &current_session, nickname);
     }
 
           

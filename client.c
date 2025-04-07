@@ -32,4 +32,5 @@ int main(int argc, char *argv[]) {
 
     showMainMenu(client_fd);
     showQuizThemes(client_fd);
+    playGame(client_fd);
 }

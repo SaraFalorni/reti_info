@@ -97,40 +97,29 @@ void showQuizThemes(int client_fd) {
   
   printf("numero di temi ok\n"); //da cancellare
   //server inizia a mandare i nomi dei temi disponibili 
-  char themes[num_themes][MAXCHAR_THEME];
-  char buf[num_themes * MAXCHAR_THEME];
-  //NON FUNZIONA BOH
-  bytes_received = recv(client_fd, buf, sizeof(buf), 0);    
-  if(bytes_received == -1) {
-    perror("Errore in recv() per il numero di temi disponibili");
-    exit(EXIT_FAILURE);
-  }
+  char *themes[num_themes];
   
-  char *ptr = buf;
-  int index = 0;
-  while(ptr < buf + bytes_received) {
-    strcpy(themes[index], ptr);
-    ptr += strlen(ptr)+1;
-    index++;
-  }
-  //NON FUNZIONA BOH
-  /*for(int i = 0; i < num_themes ; i++) {
-    ssize_t bytes_received = recv(client_fd, themes[i], MAXCHAR_THEME, 0);
-    printf("ciclo %d: %s\n", i, themes[i]);//da cancellare
-    
-    if(bytes_received == -1) {
-      perror("Errore in recv() per il numero di temi disponibili");
+  for(int i = 0; i < num_themes ; i++) {
+    int len;
+    if(recv_all_bytes(client_fd,&len, sizeof(int)) <= 0) {
+      perror("Errore nella ricezione della lunghezza della stringa");
       exit(EXIT_FAILURE);
     }
-    printf("nome tema ricevuto: %s\n",themes[i] );
-    //messaggio di ok al server per sincronizzarli
-    if(send(client_fd, MSG_OK, MSG_LEN, 0) == -1) {
-      perror("Errore in send() dell'ok alla ricezione del nome del tema");
+    
+    printf("lunghezza della stringa del ciclo %d: %d",i,len);
+    
+    char* buf = malloc(len);
+    if(recv_all_bytes(client_fd,buf,len) <= 0) {
+      perror("Errore nella ricezione della stringa");
       exit(EXIT_FAILURE);
-    } 
-  }*/
-   printf("nomi dei temi ok"); //da cancellare
-  //dopo aver ottenuto i nomi di tutti i temi disponibili li stampa a video
+    }
+    
+    printf("stringa del ciclo %d: %s",i,buf);
+    themes[i] = malloc(len);
+    strncpy(themes[i], buf, len);
+    free(buf);
+  }
+  
   int choice = 0;
     printf("Quiz disponibili\n");
 
@@ -156,6 +145,16 @@ void showQuizThemes(int client_fd) {
         }
 
     } while(choice > num_themes || choice <= 0);
+    choice -= 1;
+    printf("scelta fatta (ancora da inviare al server) : %d cioè %s\n", choice, themes[choice]); 
+    
+    //manda la scelta fatta al server
+    if(send(client_fd, &choice, sizeof(int), 0) == -1) {
+      perror("Errore in send() del tema scelto");
+      exit(EXIT_FAILURE);
+    }
+}
 
-    printf("scelta fatta (ancora da inviare al server) : %d cioè %s\n", choice, themes[choice]);    
+void playGame(int client_fd) {
+  
 }

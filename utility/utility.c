@@ -45,49 +45,6 @@ void read_q(const char* filename,char* buf, int numQ) {
 
 //-------------------------------------------------------------------------------
 
-//funzione che dato un nickname verifica se è disponibile,
-//torna true se nickname è utilizzabile, false altrimenti
-bool check_nickname(char* nickname) {
-
-    FILE *file = fopen("./txt/used_nicknames.txt","r");
-
-    if(!file) {
-        perror("Errore nell'apertura del file");
-        return false;
-    }
-
-    char buf[MAXCHAR_NICKNAME];
-
-    while(fgets(buf,MAXCHAR_NICKNAME,file) != NULL) {
-        size_t lenght = strlen(buf);
-        buf[lenght-1] = '\0'; //per eliminare '\n' presente nella riga del file
-        if(strcmp(buf,nickname) == 0) {
-            fclose(file);    
-            return false;
-        }
-        memset(buf,'\0', MAXCHAR_NICKNAME);
-    }
-        
-    fclose(file); 
-    return true;  
-}
-
-//-------------------------------------------------------------------------------
-
-void insert_nickname(char* nickname) {
-  FILE *file = fopen("./txt/used_nicknames.txt","r");
-
-  if(!file) {
-      perror("Errore nell'apertura del file");
-      return;
-  }
-  
-  fprintf(file,"%s",nickname);
-  
-  fclose(file);
-  
-  return;
-}
 
 //-------------------------------------------------------------------------------
 //funzione che modifica buf (che contiene l'intera riga)
@@ -197,4 +154,27 @@ int quanti_temi() {
   
   printf("in quanti temi: numero %d, stringa %s \n", num, buf);
   return num;
+}
+
+int recv_all_bytes(int socket, void *buf, int len) {
+  int tot_rec = 0;
+  int bytes_rec = 0;
+  
+  while(tot_rec < len) {
+    bytes_rec = recv(socket,buf+tot_rec,len - tot_rec,0);
+    if(bytes_rec <= 0)
+      return -1;
+    tot_rec += bytes_rec;
+  }
+  
+  return tot_rec;
+}
+
+void get_filename_from_index(char* bufFile, int themeChosen,struct Session* current_session) {
+  int lenTheme = strlen(current_session->availableThemes[themeChosen]);
+  int lenPre = strlen("./txt/");
+  int lenPost = strlen(".txt");
+  memcpy(bufFile,"./txt/",lenPre);
+  memcpy(bufFile+lenPre, current_session->availableThemes[themeChosen],lenTheme);
+  memcpy(bufFile+lenPre+lenTheme, ".txt", lenPost+1);
 }
