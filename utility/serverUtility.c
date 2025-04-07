@@ -89,37 +89,48 @@ void send_themes(int client_fd,struct Session* current_session) {
       perror("Errore in send() del numero di temi");
       exit(EXIT_FAILURE);
     }
-  printf("prima recv server\n");
     ssize_t bytes_received = recv(client_fd, msg, MSG_LEN, 0);
-  printf("dopo recv server %s\n",msg); 
   
-  //per qualche motivo questo blocca tutto senza entrare nell'if----------------------
-   /* if(bytes_received == -1) {
+   if(bytes_received == -1) {
       perror("Errore in recv() di conferma del numero di temi");
       exit(EXIT_FAILURE);
-    }*/
-  //---------------------
-    printf("messaggio ricevuto dal server per il numero di temi è %s\n", msg);
-    if(strcmp(msg,MSG_OK) == 0) {
-      printf("numero temi ok\n");
-      //ciclo per mandare il nome di tutti i temi disponibili
-      for(int i = 0 ; i < current_session->num_themes ; i++) {
-        if(send(client_fd, &current_session->availableThemes[i],MAXCHAR_THEME, 0) == -1) {
-        perror("Errore in send() del nome del tema");
-        exit(EXIT_FAILURE);
-        }
-      printf("nome tema mandato %s\n",current_session->availableThemes[i] );
-        ssize_t bytes_received = recv(client_fd, msg, MSG_LEN, 0);
-    
-        if(bytes_received == -1) {
-          perror("Errore in recv() di conferma della recezione del nome del tema");
-          exit(EXIT_FAILURE);
-        }
-        if(strcmp(msg,MSG_NO))
-          i--;//così viene rimandato lo stesso tema
-      }
-      
     }
+
+  if(strcmp(msg,MSG_OK) == 0) {
+    printf("numero temi ok\n");
+    int len = MAXCHAR_THEME*current_session->num_themes;
+    char buf[len];
+    memset(buf,0,len);
+    
+    //buffer concatenato per inviare tutto in una sola volta
+    int offset = 0;
+    for(int i = 0 ; i < current_session->num_themes ; i++) {
+      strcpy(buf+offset, current_session->availableThemes[i]);
+      offset += strlen(current_session->availableThemes[i])+1;
+    }
+    if(send(client_fd, buf,offset, 0) == -1) {
+      perror("Errore in send() dei nomi dei temi");
+      exit(EXIT_FAILURE);
+      }
+    
+    //ciclo per mandare il nome di tutti i temi disponibili
+    /*for(int i = 0 ; i < current_session->num_themes ; i++) {
+      if(send(client_fd, current_session->availableThemes[i],MAXCHAR_THEME, 0) == -1) {
+      perror("Errore in send() del nome del tema");
+      exit(EXIT_FAILURE);
+      }
+      printf("ciclo %d nome tema mandato %s\n",i,current_session->availableThemes[i] );
+      ssize_t bytes_received = recv(client_fd, msg, MSG_LEN, 0);
+  
+      if(bytes_received == -1) {
+        perror("Errore in recv() di conferma della recezione del nome del tema");
+        exit(EXIT_FAILURE);
+      }
+      if(strcmp(msg,MSG_NO) == 0)
+        i--;//così viene rimandato lo stesso tema
+    }*/
+    
+  }
 }
 
 

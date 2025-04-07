@@ -98,9 +98,26 @@ void showQuizThemes(int client_fd) {
   printf("numero di temi ok\n"); //da cancellare
   //server inizia a mandare i nomi dei temi disponibili 
   char themes[num_themes][MAXCHAR_THEME];
-  for(int i = 0; i < num_themes ; i++) {
-    ssize_t bytes_received = recv(client_fd, &themes[i], MAXCHAR_THEME, 0);
+  char buf[num_themes * MAXCHAR_THEME];
+  //NON FUNZIONA BOH
+  bytes_received = recv(client_fd, buf, sizeof(buf), 0);    
+  if(bytes_received == -1) {
+    perror("Errore in recv() per il numero di temi disponibili");
+    exit(EXIT_FAILURE);
+  }
   
+  char *ptr = buf;
+  int index = 0;
+  while(ptr < buf + bytes_received) {
+    strcpy(themes[index], ptr);
+    ptr += strlen(ptr)+1;
+    index++;
+  }
+  //NON FUNZIONA BOH
+  /*for(int i = 0; i < num_themes ; i++) {
+    ssize_t bytes_received = recv(client_fd, themes[i], MAXCHAR_THEME, 0);
+    printf("ciclo %d: %s\n", i, themes[i]);//da cancellare
+    
     if(bytes_received == -1) {
       perror("Errore in recv() per il numero di temi disponibili");
       exit(EXIT_FAILURE);
@@ -111,7 +128,7 @@ void showQuizThemes(int client_fd) {
       perror("Errore in send() dell'ok alla ricezione del nome del tema");
       exit(EXIT_FAILURE);
     } 
-  }
+  }*/
    printf("nomi dei temi ok"); //da cancellare
   //dopo aver ottenuto i nomi di tutti i temi disponibili li stampa a video
   int choice = 0;
@@ -121,9 +138,9 @@ void showQuizThemes(int client_fd) {
         printf("+");
     
     for(int i = 0; i < num_themes ; i++) {
-      printf("%d - %s\n", i+1, themes[i]);
+      printf("\n%d - %s", i+1, themes[i]);
     }
-        
+    printf("\n");  
     for(int i = 0 ; i < 20; i++)
         printf("+");
     do {
