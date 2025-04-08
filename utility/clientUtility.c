@@ -103,15 +103,21 @@ void showQuizThemes(int client_fd) {
       exit(EXIT_FAILURE);
     }
     
-    char* buf = malloc(len);
-    if(recv_all_bytes(client_fd,buf,len) <= 0) {
-      perror("Errore nella ricezione della stringa");
-      exit(EXIT_FAILURE);
+    if(len == -1) {
+      themes[i] = "0";
+    }
+    else {
+      char* buf = malloc(len);
+      if(recv_all_bytes(client_fd,buf,len) <= 0) {
+        perror("Errore nella ricezione della stringa");
+        exit(EXIT_FAILURE);
+      }
+    
+      themes[i] = malloc(len);
+      strncpy(themes[i], buf, len);
+      free(buf);
     }
     
-    themes[i] = malloc(len);
-    strncpy(themes[i], buf, len);
-    free(buf);
   }
   
   int choice = 0;
@@ -119,10 +125,17 @@ void showQuizThemes(int client_fd) {
 
     for(int i = 0 ; i < 20; i++)
         printf("+");
-    
+    int n = 0;//intero per "tradurre" l'indice dato al client con quello del server
     for(int i = 0; i < num_themes ; i++) {
-      printf("\n%d - %s", i+1, themes[i]);
+      if(strcmp(themes[i],"0") == 0 ) 
+        n++;
+      else 
+        printf("\n%d - %s", i-n+1, themes[i]);
     }
+    
+    //caso in cui ha già giocato a tutti i quiz disponibili
+    //FARE FUNZIONE DI FINE GIOCO!!!!!!!!!!!!!!!!!!!!
+    
     printf("\n");  
     for(int i = 0 ; i < 20; i++)
         printf("+");
@@ -132,15 +145,21 @@ void showQuizThemes(int client_fd) {
 
         scanf("%d", &choice);
 
-        if(choice > num_themes || choice <= 0) {
+        if(choice > (num_themes-n) || choice <= 0) {
             printf("scelta non valida, devi inserire un numero tra quelli associati ai temi disponibili\n");
 
             while(getchar() != '\n');
         }
 
-    } while(choice > num_themes || choice <= 0);
-    choice -= 1;
-        
+    } while(choice > (num_themes-n) || choice <= 0);
+    
+    //"traduzione" dell'indice da mandare al server
+    choice = choice - 1;
+    for(int i = 0; i < num_themes ; i++) {
+      if(strcmp(themes[i],"0") == 0  && i < choice) 
+        choice++;
+    }
+            
     //manda la scelta fatta al server
     if(send(client_fd, &choice, sizeof(int), 0) == -1) {
       perror("Errore in send() del tema scelto");

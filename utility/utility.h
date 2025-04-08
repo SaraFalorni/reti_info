@@ -5,6 +5,7 @@
 #include <netinet/in.h>
 #include <string.h>
 #include <ctype.h> //toupper()
+#include <pthread.h>
 
 #define MAXCHAR_LINE 1024
 #define MAXCHAR_NICKNAME 20

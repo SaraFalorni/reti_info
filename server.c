@@ -1,11 +1,12 @@
 #include "./utility/serverUtility.h"
 
+
 int main(int argc, char *argv[]) {
     //inizializza la sessione di gioco;
-    struct Session current_session;
-    init_session(&current_session);
+    
+    init_session();
 
-    int server_fd, client_fd;
+    int server_fd;//, client_fd;
     struct sockaddr_in server_addr, client_addr;
     socklen_t client_len = sizeof(client_addr);
     int port = 8080;//??
@@ -37,24 +38,27 @@ int main(int argc, char *argv[]) {
 
 
     while(1) {
+        int *client_fd = malloc(sizeof(int));
         //accettare connessione in arrivo
-        if((client_fd = accept(server_fd, (struct sockaddr*)&client_addr, &client_len)) == -1) {
+        if((*client_fd = accept(server_fd, (struct sockaddr*)&client_addr, &client_len)) == -1) {
             perror("Errore nell'accettazione della connesione");
             continue;
         }
 
-        printf("client connesso..\n");
-        
-        //il primo msg che riceve è il nickname
-        char nickname[MAXCHAR_NICKNAME];
-        get_nickname(client_fd,&current_session,nickname);
-        //una volta registrato il nuovo giocatore invia i temi disponibili
-        send_themes(client_fd, &current_session, nickname);
+        pthread_t tid;
+        if(pthread_create(&tid, NULL, client_handler, client_fd) != 0) {
+          perror("Errore nella creazione del thread");
+          close(*client_fd);
+          free(client_fd);
+        }
+        pthread_detach(tid);
+
     }
 
           
 
     close(server_fd);
+    return 0;
 }
 
 

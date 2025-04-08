@@ -31,6 +31,10 @@ int main(int argc, char *argv[]) {
     }
 
     showMainMenu(client_fd);
-    showQuizThemes(client_fd);
-    playGame(client_fd);
+    while(1) {
+      showQuizThemes(client_fd);
+      playGame(client_fd);
+    }
+    close(client_fd);
+    return 0;
 }
