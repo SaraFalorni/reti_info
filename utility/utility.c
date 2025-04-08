@@ -54,8 +54,8 @@ void get_answ_from_line(char *buf) {
     char *answer = strchr(buf,'=');
 
     size_t lenght = strlen(answer);
-    answer[lenght-1] = '\0'; //per eliminare '\n' presente nella riga del file
-    
+    if(lenght > 0 && answer[lenght-1] == '\n')
+      answer[lenght-1] = '\0'; //per eliminare '\n' presente nella riga del file
 
     if(answer != NULL)
         strcpy(buf,answer+1);
@@ -71,18 +71,21 @@ bool check_answer(const char *theme, char* answer, int numQ) {
     read_line(theme,buf,numQ);
 
     get_answ_from_line(buf);
-
+    
     //mette la risposta data in maiuscolo
     char *answer_up = malloc(strlen(answer)+1);
-    strcpy(answer_up,answer);
     for(int i = 0; i < strlen(answer); i++)
         answer_up[i] = toupper(answer[i]);
+    answer_up[strlen(answer)] = '\0';
+        
+    //remove_spaces(answer_up); //rimuove spazi all'inizio o la fine
 
     char delimitator[] = "|";
 
     char *right_answer = strtok(buf,delimitator);
 
     while(right_answer != NULL) {
+        printf("giusta : !%s! data: !%s! \n ", right_answer,answer_up);
         if(strcmp(answer_up,right_answer) == 0) {
             //confronto le stringhe tutte in upper case per valutarne solo il contenuto
             return true;
@@ -92,6 +95,20 @@ bool check_answer(const char *theme, char* answer, int numQ) {
 
     return false;
 
+}
+
+void remove_spaces(char* str) {
+  //rimozione spazi iniziali
+  while(isspace((unsigned char)* str)) 
+    str++;
+    
+  char* fine = str + strlen(str) -1;
+  
+  //rimozione spazi finali
+  while(fine > str && isspace((unsigned char)* str)) 
+    fine--;
+    
+  *(fine + 1) = '\0';
 }
 
 //-------------------------------------------------------------------------------

@@ -40,6 +40,7 @@ void read_q(const char* filename,char* buf, int numQ);
 bool check_nickname(char* nickname);
 bool check_answer(const char *theme, char* answer, int numQ);
 void get_answ_from_line(char *buf);
+void remove_spaces(char* str);
 void get_theme_leaderboard(char* theme);
 void get_theme_name(int num, char* buf);//ritorna il numero di temi disponibili
 int quanti_temi();

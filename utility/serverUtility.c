@@ -155,6 +155,7 @@ void playquiz(int themeChosen, char* nickname,struct Session* current_session, i
     
     //calcolo punteggio
     int p = updatePoints(i,bufR,themeChosen,nickname,current_session);
+    printf("risposta: %s punteggio domanda: %d\n",bufR,p);
     //manda feedback sulla risposta data al client
     if(p == 1) {   
     //messaggio corretta al client
@@ -169,13 +170,8 @@ void playquiz(int themeChosen, char* nickname,struct Session* current_session, i
       perror("Errore in send() del risposta errata");
       exit(EXIT_FAILURE);
     } 
-  }
-    
-    
-    
-    
+  }  
   }//chiude for
-    
 }
 
 //funzione che data una risposta torna 1 se è giusta o 0 altrimenti aggiornando il punteggio nella relativa struttura dati

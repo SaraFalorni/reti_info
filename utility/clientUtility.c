@@ -173,11 +173,14 @@ void playGame(int client_fd) {
     char risp[MAXCHAR_LINE];
     strcpy(risp,"0");
     
-    //risposta
+    //ripulisce stdin evitando la doppia stampa
+    int c;
+    while((c = getchar()) != '\n' && c != EOF);
     
-    if(fgets(risp, MAXCHAR_LINE, stdin) == NULL) {
+    //risposta
+    do {
       printf("\nRisposta: ");
-    }
+    }while(fgets(risp, MAXCHAR_LINE, stdin) == NULL || risp[0] == '\n');
     printf("\n"); 
     
     //sostituisco '\n' con '\0'
@@ -185,6 +188,8 @@ void playGame(int client_fd) {
       risp[strlen(risp)-1] = '\0';
     
     free(buf);
+    
+    remove_spaces(risp); //elimina eventuali spazi iniziali o finali
     
     //manda la risposta al server
     int lenR = strlen(risp)+1;
@@ -197,13 +202,14 @@ void playGame(int client_fd) {
         exit(EXIT_FAILURE);
       }
      
-    char msg[MSG_LEN];
+    char msg[MSG_LEN+1];
     //server dice se la risposta è corretta o meno
     if(recv_all_bytes(client_fd,msg,MSG_LEN) <= 0) {
       perror("Errore in recv() del feedback sulla risposta");
       exit(EXIT_FAILURE);
     }
-    
+    printf("%d %s\n",strcmp(msg,MSG_OK),msg);
+    msg[MSG_LEN] = '\0';
     if(strcmp(msg,MSG_OK) == 0) {
       printf("Risposta Corretta\n");
     }
