@@ -171,17 +171,23 @@ void playGame(int client_fd) {
     printf("%s\n",buf);
     
     char risp[MAXCHAR_LINE];
+    strcpy(risp,"0");
     
-    do {
-        printf("\nRisposta: ");
-        if(fgets(risp, MAXCHAR_LINE, stdin) == NULL)
-          continue;
-    } while( risp[0] == '\n');
+    //risposta
+    
+    if(fgets(risp, MAXCHAR_LINE, stdin) == NULL) {
+      printf("\nRisposta: ");
+    }
+    printf("\n"); 
+    
+    //sostituisco '\n' con '\0'
+    if(strlen(risp) > 0 && risp[strlen(risp) - 1] == '\n')
+      risp[strlen(risp)-1] = '\0';
     
     free(buf);
     
     //manda la risposta al server
-    int lenR = strlen(risp) + 1;
+    int lenR = strlen(risp)+1;
     if(send(client_fd, &lenR, sizeof(int),0)== -1) { //invio lunghezza della risposta
         perror("Errore in send() della lunghezza della risposta");
         exit(EXIT_FAILURE);
@@ -190,7 +196,19 @@ void playGame(int client_fd) {
         perror("Errore in send() della domanda");
         exit(EXIT_FAILURE);
       }
-      
-      
+     
+    char msg[MSG_LEN];
+    //server dice se la risposta è corretta o meno
+    if(recv_all_bytes(client_fd,msg,MSG_LEN) <= 0) {
+      perror("Errore in recv() del feedback sulla risposta");
+      exit(EXIT_FAILURE);
+    }
+    
+    if(strcmp(msg,MSG_OK) == 0) {
+      printf("Risposta Corretta\n");
+    }
+    else
+      printf("Risposta Errata\n");
+    
   }//chiude for
 }

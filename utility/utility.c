@@ -178,3 +178,20 @@ void get_filename_from_index(char* bufFile, int themeChosen,struct Session* curr
   memcpy(bufFile+lenPre, current_session->availableThemes[themeChosen],lenTheme);
   memcpy(bufFile+lenPre+lenTheme, ".txt", lenPost+1);
 }
+
+
+//print session
+void print_session(struct Session* current_session) {
+  printf("numero temi: %d\n", current_session->num_themes);
+  for(int i = 0 ; i < current_session->num_themes ; i++) 
+      printf(" %s\n", current_session->availableThemes[i]);
+  struct Player* ptr= current_session->players;
+  while(ptr != NULL)
+  {
+    printf("giocatore: %s\n",ptr->nickname);
+    for(int i = 0 ; i < current_session->num_themes ; i++) 
+      printf(" punteggio %s: %d\n", current_session->availableThemes[i], ptr->theme[i].points);
+    printf("\n");
+    ptr= ptr->next;
+  }
+}

@@ -20,7 +20,7 @@ typedef enum {false, true} bool;
 struct Theme {
   char* name;
   int points; //-1 valore a cui è inizializzato, vuol dire che il giocatore non ci ha ancora giocato
-  struct Theme* next;
+  //struct Theme* next;
 };
 struct Player {
     char* nickname;
@@ -35,10 +35,6 @@ struct Session {
   int num_themes;
 };
 
-/*struct Msg {
-    //formato del messaggio??
-}*/
-
 void read_line(const char* filename,char* buf, int line);
 void read_q(const char* filename,char* buf, int numQ);
 bool check_nickname(char* nickname);
@@ -49,3 +45,4 @@ void get_theme_name(int num, char* buf);//ritorna il numero di temi disponibili
 int quanti_temi();
 int recv_all_bytes(int socket, void *buf, int len);
 void get_filename_from_index(char* bufFile, int themeChosen,struct Session* current_session);
+void print_session(struct Session* current_session);

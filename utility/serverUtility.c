@@ -30,23 +30,24 @@ bool insert_player(char* nickname,struct Session* current_session) {
       return false;
     p = p->next;
   }
-  p = (struct Player*)malloc(sizeof(struct Player*));
+  p = (struct Player*)malloc(sizeof(struct Player));
   size_t len_nickname = strlen(nickname)+1;
   p->nickname = (char*)malloc(len_nickname);
-  memcpy(nickname,p->nickname,len_nickname);  
+  memcpy(p->nickname,nickname,len_nickname);  
   
   //INIZIALIZZAZIONE DEI TEMI CON POINTS = -1
-  struct Theme* pTheme = p->theme;
-  for(int i = 0; i < current_session->num_themes ; i++) {
-    pTheme = (struct Theme*)malloc(sizeof(struct Theme*)); 
-    
-    size_t len_themeName = strlen(current_session->availableThemes[i]) + 1;
-    pTheme->name = (char*)malloc(len_themeName);
-    memcpy(pTheme->name,current_session->availableThemes[i],len_themeName);
-    
-    pTheme->points = -1;//valore di inizializzazione
-    pTheme = pTheme->next;
+  
+  p->theme = (struct Theme*)malloc(current_session->num_themes * sizeof(struct Theme));
+  for(int i = 0; i < current_session->num_themes ; i++){
+  size_t len_themeName = strlen(current_session->availableThemes[i]) + 1;
+    p->theme[i].name = (char*)malloc(len_themeName);
+  strcpy(p->theme[i].name, current_session->availableThemes[i]);
+  p->theme[i].points = -1;
   }
+  p->next = NULL;
+  current_session->players = p;
+  
+  //print_session(current_session);
   //giocatore inserito correttamente
   
   
@@ -152,11 +153,61 @@ void playquiz(int themeChosen, char* nickname,struct Session* current_session, i
       exit(EXIT_FAILURE);
     }
     
-    printf("%s\n",bufR);
+    //calcolo punteggio
+    int p = updatePoints(i,bufR,themeChosen,nickname,current_session);
+    //manda feedback sulla risposta data al client
+    if(p == 1) {   
+    //messaggio corretta al client
+    if(send(client_fd, MSG_OK, MSG_LEN, 0) == -1) {
+      perror("Errore in send() del risposta corretta");
+      exit(EXIT_FAILURE);
+    }    
+  }
+  else {
+    //messaggio non corretta al client
+    if(send(client_fd, MSG_NO, MSG_LEN, 0) == -1) {
+      perror("Errore in send() del risposta errata");
+      exit(EXIT_FAILURE);
+    } 
+  }
+    
+    
+    
+    
   }//chiude for
     
 }
 
+//funzione che data una risposta torna 1 se è giusta o 0 altrimenti aggiornando il punteggio nella relativa struttura dati
+int updatePoints(int numq,char* bufR,int themeChosen,char* nickname,struct Session* current_session) {
+  char bufFile[MAXCHAR_LINE];
+  get_filename_from_index(bufFile,themeChosen, current_session);
+  struct Player* ptr = get_player(current_session, nickname);
+    int i = 0;
+    while(strcmp(ptr->theme[i].name,current_session->availableThemes[themeChosen]) != 0 && i < current_session->num_themes ) {
+    i++;
+  } 
+  if(ptr->theme[i].points == -1) //se è la prima domanda
+      ptr->theme[i].points = 0;
+      
+  if(check_answer(bufFile, bufR,numq)) {
+    ptr->theme[i].points++;
+    return 1;
+  }
+  else     
+    return 0;
 
+}
 
+//dato il nickname ritorna un puntatore al giocatore
+struct Player* get_player(struct Session* current_session,char* nickname) {
+  struct Player* p = current_session->players;
+  
+  while(strcmp(p->nickname,nickname) != 0) {
+    if(p == NULL)
+      break;
+    p = p->next;
+  } 
+  return p;
+}
 
