@@ -154,12 +154,13 @@ void showQuizThemes(int client_fd) {
     } while(choice > (num_themes-n) || choice <= 0);
     
     //"traduzione" dell'indice da mandare al server
-    choice = choice - 1;
+   
     for(int i = 0; i < num_themes ; i++) {
       if(strcmp(themes[i],"0") == 0  && i < choice) 
         choice++;
     }
-            
+    choice = choice - 1;
+    
     //manda la scelta fatta al server
     if(send(client_fd, &choice, sizeof(int), 0) == -1) {
       perror("Errore in send() del tema scelto");
@@ -193,8 +194,10 @@ void playGame(int client_fd) {
     strcpy(risp,"0");
     
     //ripulisce stdin evitando la doppia stampa
-    int c;
-    while((c = getchar()) != '\n' && c != EOF);
+    if(i == 0) {
+      int c;
+      while((c = getchar()) != '\n' && c != EOF);
+    }
     
     //risposta
     do {

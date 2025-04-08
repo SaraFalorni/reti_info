@@ -41,7 +41,7 @@ void* client_handler(void* arg) {
 struct Player* find_last_player(struct Player* p) {
   if(p == NULL || p->next == NULL)
     return p;
-  return find_last_player(p);
+  return find_last_player(p->next);
 }
 
 bool insert_player(char* nickname) {
@@ -88,7 +88,7 @@ bool insert_player(char* nickname) {
   }
     
   //sblocco il mutex
-  pthread_mutex_lock(&lockPlayers);
+  pthread_mutex_unlock(&lockPlayers);
   
   
   //print_session(current_session);
@@ -152,7 +152,7 @@ void send_themes(int client_fd, char* nickname) {
       
       //unlock mutex
       pthread_mutex_unlock(&lockPlayers);
-      if(ptr->theme[i].points == -1) {
+      if(ptr->theme[i].points != -1) {
         int len = -1;
       
         if(send(client_fd, &len, sizeof(int),0)== -1) { //invio di -1 per indicare che non è un tema disponibile
