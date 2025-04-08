@@ -59,7 +59,6 @@ void chooseNickname(int client_fd) {
     }
     
     if(strcmp(msg,MSG_OK)) {
-      printf("nickname ok\n");
       break;
     }
   }    
@@ -79,7 +78,6 @@ void showQuizThemes(int client_fd) {
     perror("Errore in recv() per il numero di temi disponibili");
     exit(EXIT_FAILURE);
   }
-  printf("numero temi ricevuti client %d\n",num_themes);
    
   //messaggio di ok al server per sincronizzazione
   if(send(client_fd, MSG_OK, MSG_LEN, 0) == -1) {
@@ -95,7 +93,6 @@ void showQuizThemes(int client_fd) {
       exit(EXIT_FAILURE);
     } */
   
-  printf("numero di temi ok\n"); //da cancellare
   //server inizia a mandare i nomi dei temi disponibili 
   char *themes[num_themes];
   
@@ -106,15 +103,12 @@ void showQuizThemes(int client_fd) {
       exit(EXIT_FAILURE);
     }
     
-    printf("lunghezza della stringa del ciclo %d: %d",i,len);
-    
     char* buf = malloc(len);
     if(recv_all_bytes(client_fd,buf,len) <= 0) {
       perror("Errore nella ricezione della stringa");
       exit(EXIT_FAILURE);
     }
     
-    printf("stringa del ciclo %d: %s",i,buf);
     themes[i] = malloc(len);
     strncpy(themes[i], buf, len);
     free(buf);
@@ -146,15 +140,57 @@ void showQuizThemes(int client_fd) {
 
     } while(choice > num_themes || choice <= 0);
     choice -= 1;
-    printf("scelta fatta (ancora da inviare al server) : %d cioè %s\n", choice, themes[choice]); 
-    
+        
     //manda la scelta fatta al server
     if(send(client_fd, &choice, sizeof(int), 0) == -1) {
       perror("Errore in send() del tema scelto");
       exit(EXIT_FAILURE);
     }
+    
+    //stampa titolo del quiz
+    printf("\nQuiz - %s\n", themes[choice]);
+    for(int i = 0 ; i < 20; i++)
+        printf("+");
+    printf("\n");
 }
 
 void playGame(int client_fd) {
-  
+  for(int i = 0; i < NUM_Q ; i++) {
+    int len;
+    if(recv_all_bytes(client_fd,&len, sizeof(int)) <= 0) {
+      perror("Errore nella ricezione della lunghezza della domanda");
+      exit(EXIT_FAILURE);
+    }
+    
+    char* buf = malloc(len);
+    if(recv_all_bytes(client_fd,buf,len) <= 0) {
+      perror("Errore nella ricezione della domanda");
+      exit(EXIT_FAILURE);
+    }
+    
+    printf("%s\n",buf);
+    
+    char risp[MAXCHAR_LINE];
+    
+    do {
+        printf("\nRisposta: ");
+        if(fgets(risp, MAXCHAR_LINE, stdin) == NULL)
+          continue;
+    } while( risp[0] == '\n');
+    
+    free(buf);
+    
+    //manda la risposta al server
+    int lenR = strlen(risp) + 1;
+    if(send(client_fd, &lenR, sizeof(int),0)== -1) { //invio lunghezza della risposta
+        perror("Errore in send() della lunghezza della risposta");
+        exit(EXIT_FAILURE);
+      } 
+      if(send(client_fd,risp,lenR,0)== -1) { 
+        perror("Errore in send() della domanda");
+        exit(EXIT_FAILURE);
+      }
+      
+      
+  }//chiude for
 }

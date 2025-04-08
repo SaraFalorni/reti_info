@@ -84,7 +84,7 @@ void get_nickname(int client_fd,struct Session* current_session, char* name) {
 void send_themes(int client_fd,struct Session* current_session, char* nickname) {
 //manda un messaggio al client con il numero di temi e aspetta un feedback sulla ricezione di quest'ultimo
   char msg[MSG_LEN];
-  printf("numero di temi: %d\n", current_session->num_themes);
+  
 
   if(send(client_fd, &current_session->num_themes, sizeof(current_session->num_themes), 0) == -1) {
       perror("Errore in send() del numero di temi");
@@ -98,11 +98,10 @@ void send_themes(int client_fd,struct Session* current_session, char* nickname) 
     }
 
   if(strcmp(msg,MSG_OK) == 0) {
-    printf("numero temi ok\n");
-    
+       
     for(int i = 0; i < current_session->num_themes ; i++) {
       int len = strlen(current_session->availableThemes[i]) + 1;
-      printf("nel ciclo %d la stringa è lunga %d",i,len);
+      
       if(send(client_fd, &len, sizeof(int),0)== -1) { //invio lunghezza della stringa
         perror("Errore in send() della lunghezza del nome del tema");
         exit(EXIT_FAILURE);
@@ -120,17 +119,17 @@ void send_themes(int client_fd,struct Session* current_session, char* nickname) 
       exit(EXIT_FAILURE);
     }
   
-  playquiz(themeChosen, nickname);
+  playquiz(themeChosen, nickname,current_session, client_fd);
 }
 
-void playquiz(int themeChosen, char* nickname) {
-  char* bufQ[MAXCHAR_LINE], bufFile[MAXCHARLINE];
-  get_filename_from_index(bufFile,themeChosen, &current_session);
+void playquiz(int themeChosen, char* nickname,struct Session* current_session, int client_fd) {
+  char bufQ[MAXCHAR_LINE], bufFile[MAXCHAR_LINE];
+  get_filename_from_index(bufFile,themeChosen, current_session);
   for(int i = 0; i < NUM_Q ; i++) {
       //recupero la domanda dal file
       read_q(bufFile,bufQ,i);
       int lenQ = strlen(bufQ) + 1;
-      printf("nel ciclo %d la stringa è lunga %d",i,lenQ);
+      
       if(send(client_fd, &lenQ, sizeof(int),0)== -1) { //invio lunghezza della domanda
         perror("Errore in send() della lunghezza della domanda");
         exit(EXIT_FAILURE);
@@ -138,11 +137,26 @@ void playquiz(int themeChosen, char* nickname) {
       if(send(client_fd,bufQ,lenQ,0)== -1) { 
         perror("Errore in send() della domanda");
         exit(EXIT_FAILURE);
-      } 
+      }
+      
+      //riceve la risposta ( sempre ricevendo prima il numero di byte)
+      int lenR;
+    if(recv_all_bytes(client_fd,&lenR, sizeof(int)) <= 0) {
+      perror("Errore nella ricezione della lunghezza della risposta");
+      exit(EXIT_FAILURE);
     }
     
-  }
+    char* bufR = malloc(lenR);
+    if(recv_all_bytes(client_fd,bufR,lenR) <= 0) {
+      perror("Errore nella ricezione della risposta");
+      exit(EXIT_FAILURE);
+    }
+    
+    printf("%s\n",bufR);
+  }//chiude for
+    
 }
+
 
 
 
