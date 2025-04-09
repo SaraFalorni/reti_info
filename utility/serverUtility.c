@@ -89,14 +89,13 @@ bool insert_player(char* nickname) {
   new_player->nickname = (char*)malloc(len_nickname);
   memcpy(new_player->nickname,nickname,len_nickname);  
   
-  //INIZIALIZZAZIONE DEI TEMI CON POINTS = -1
+  //INIZIALIZZAZIONE DEI TEMI CON POINTS = -1 e completed con false
   
   new_player->themePoints = malloc(current_session.num_themes * sizeof(int));
+  new_player->themeCompleted = malloc(current_session.num_themes * sizeof(bool));
   for(int i = 0; i < current_session.num_themes ; i++){
-    /*size_t len_themeName = strlen(current_session.availableThemes[i]) + 1;
-    new_player->theme[i].name = (char*)malloc(len_themeName);
-    strcpy(new_player->theme[i].name, current_session.availableThemes[i]);*/
     new_player->themePoints[i] = -1;
+    new_player->themeCompleted[i] = false;
   }
   new_player->next = NULL;
   current_session.num_players++;
@@ -264,6 +263,10 @@ void playquiz(int themeChosen, char* nickname, int client_fd) {
     } 
   }  
   }//chiude for
+  //se arriva a questo punto il quiz è stato completato
+  pthread_mutex_lock(&lockPlayers);
+  get_player(current_session.players,nickname)->themeCompleted[themeChosen] = true;
+  pthread_mutex_unlock(&lockPlayers);
 }
 
 //funzione che data una risposta torna 1 se è giusta o 0 altrimenti aggiornando il punteggio nella relativa struttura dati
@@ -404,7 +407,13 @@ struct Player* copy_player(struct Player* current_player,int index_theme) {
   //basta memorizzare il punteggio relativo a solo quel tema
   player_copy->themePoints = malloc(sizeof(int));
   
-  player_copy->themePoints[index_theme] = current_player->themePoints[index_theme];
+  player_copy->themePoints[0] = current_player->themePoints[index_theme];
+  
+  //memorizza anche se il tema è stato completato o meno (serve per la funzione print_completed_quiz
+  //basta memorizzare il punteggio relativo a solo quel tema
+  player_copy->themeCompleted = malloc(sizeof(bool));
+  player_copy->themeCompleted[0] = current_player->themeCompleted[index_theme];
+  
   player_copy->next = NULL;
   return player_copy;
 }
@@ -458,7 +467,7 @@ void print_completed_quiz(struct Player** rankings) {
     if(current_player != NULL) 
       printf("\nQuiz Tema %d completato\n",i+1);
     
-    while(current_player != NULL && *current_player->themePoints == NUM_Q) {
+    while(current_player != NULL && *current_player->themeCompleted == true) {
       printf("- %s\n",current_player->nickname);
       current_player = current_player->next;
     }
@@ -526,7 +535,50 @@ void do_show_score(int client_fd) {
 
 
 void do_endquiz(int client_fd) {
-printf("endquiz da fare");
+  //riceve dal client il nickname per poter cancellare le relative informazioni
+    int len;
+    if(recv_all_bytes(client_fd,&len, sizeof(int)) <= 0) {
+      perror("Errore nella ricezione della lunghezza del nickname (endquiz)");
+      exit(EXIT_FAILURE);
+    }
+    
+    char* nickname = malloc(len);
+    if(recv_all_bytes(client_fd,nickname,len) <= 0) {
+      perror("Errore nella ricezione del nickname (endquiz)");
+      exit(EXIT_FAILURE);
+    }
+    
+    //eliminia il player corrispondente da current_session
+    pthread_mutex_lock(&lockPlayers);
+    struct Player* current_player = current_session.players;
+    struct Player* prec_player = NULL;
+    
+    while(current_player != NULL) {
+      if(strcmp(nickname, current_player->nickname) == 0) {
+        if(prec_player == NULL) {
+          //se è il primo della lista
+          current_session.players = current_player->next;
+        }
+        else {
+          prec_player->next = current_player->next;
+        }
+        
+        //libera la memoria allocata
+        free(current_player->nickname);
+        free(current_player->themePoints);
+        free(current_player);
+        break;
+      }
+      prec_player = current_player;
+      current_player = current_player->next;
+    }
+    
+    pthread_mutex_unlock(&lockPlayers);
+    
+    //chiude la comunicazione con il client
+    close(client_fd);
+    pthread_exit(NULL);
+    
 }
 
 int count_ranked(struct Player** rankings,int theme_index) {

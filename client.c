@@ -29,11 +29,12 @@ int main(int argc, char *argv[]) {
         close(client_fd);
         exit(EXIT_FAILURE);
     }
-
-    showMainMenu(client_fd);
+    
+    char nickname[MAXCHAR_NICKNAME];
+    showMainMenu(client_fd,nickname);
     while(1) {
       showQuizThemes(client_fd);
-      playGame(client_fd);
+      playGame(client_fd, nickname);
     }
     close(client_fd);
     return 0;

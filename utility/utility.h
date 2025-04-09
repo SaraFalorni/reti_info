@@ -27,6 +27,7 @@ struct Player {
     char* nickname;
     int* themePoints;//ogni tema è identificato dall'indice nell'array current_session.availableThemes
     struct Player* next;
+    bool* themeCompleted; //true se i-esimo quiz è stato completato
 };
 
 struct Session {

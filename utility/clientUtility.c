@@ -1,6 +1,6 @@
 #include "clientUtility.h"
 
-void showMainMenu(int client_fd) {
+void showMainMenu(int client_fd,char* nickname) {
     int choice = 0;
     printf("Trivia Quiz\n");
 
@@ -25,7 +25,7 @@ void showMainMenu(int client_fd) {
 
     switch(choice) {
         case 1:
-            chooseNickname(client_fd);
+            chooseNickname(client_fd,nickname);
             break;
         case 2:
             exitGame(client_fd);
@@ -33,8 +33,8 @@ void showMainMenu(int client_fd) {
     }    
 }
 
-void chooseNickname(int client_fd) {
-    char nickname[MAXCHAR_NICKNAME];
+void chooseNickname(int client_fd,char* nickname) {
+    //char nickname[MAXCHAR_NICKNAME]; da cancellare
     printf("Trivia Quiz\n");
 
     for(int i = 0 ; i < NUM_SEPARATOR; i++)
@@ -121,7 +121,7 @@ void showQuizThemes(int client_fd) {
   }
   
   int choice = 0;
-    printf("Quiz disponibili\n");
+    printf("\nQuiz disponibili\n");
 
     for(int i = 0 ; i < NUM_SEPARATOR; i++)
         printf("+");
@@ -134,8 +134,11 @@ void showQuizThemes(int client_fd) {
     }
     
     //caso in cui ha già giocato a tutti i quiz disponibili
-    //FARE FUNZIONE DI FINE GIOCO!!!!!!!!!!!!!!!!!!!!
-    
+    if(n == num_themes-1) {
+      printf("Hai già partecipato a tutti i quiz disponibili, arrivederci!");
+      exitGame(client_fd);
+    }
+        
     printf("\n");  
     for(int i = 0 ; i < 20; i++)
         printf("+");
@@ -174,7 +177,7 @@ void showQuizThemes(int client_fd) {
     printf("\n");
 }
 
-void playGame(int client_fd) {
+void playGame(int client_fd,char* nickname) {
   for(int i = 0; i < NUM_Q ; i++) {
     int len;
     if(recv_all_bytes(client_fd,&len, sizeof(int)) <= 0) {
@@ -214,7 +217,7 @@ void playGame(int client_fd) {
     remove_spaces(risp); //elimina eventuali spazi iniziali o finali
     
     //se check_comand torna true vuol dire che è stata fatta una show score invece di rispondere, quindi va ripetuta la domanda precedente
-    if(checkComand(client_fd,risp)) {
+    if(checkComand(client_fd,risp,nickname)) {
       i--;
       continue;
     }
@@ -249,7 +252,7 @@ void send_answer(int client_fd,char* risp) {
 }
 
 //ogni volta che il client sta partecipando ad un quiz può richiedere i comandi showscore o endquiz. questa funzione gestisce questa possibilità
-bool checkComand(int client_fd,char* risp) {
+bool checkComand(int client_fd,char* risp,char* nickname) {
   //manda MSG_OK al server se il client ha risposto alla domanda
   //manda MSG_RK al server se il client ha richiesto show score
   //manda MSG_EX al server se il client ha richiesto endquiz
@@ -266,7 +269,7 @@ bool checkComand(int client_fd,char* risp) {
       perror("Errore in send() del endquiz");
       exit(EXIT_FAILURE);
     }
-    exitGame(client_fd);
+    endGame(client_fd,nickname);
     return false;
   }
   else {
@@ -324,7 +327,24 @@ void showScore(int client_fd) {
 
 
 
-void exitGame(int client_fd) {
-    printf("exit game\n");
+void endGame(int client_fd,char* nickname) {
+    //manda al server il nickname per permettere al server di cancellare il corrispondente Player 
+    int len = strlen(nickname);
+    if(send(client_fd, &len, sizeof(int),0)== -1) { //invio lunghezza del nickname
+        perror("Errore in send() della lunghezza del nickname (endGame)");
+        exit(EXIT_FAILURE);
+      } 
+    
+    if(send(client_fd, nickname, len, 0) == -1) {
+      perror("Errore in send() del nickname");
+      exit(EXIT_FAILURE);
+    }
+    strcpy(nickname, "\0");
+    //torna al main menu
+    showMainMenu(client_fd,nickname);
 }
 
+void exitGame(int client_fd) {
+  close(client_fd);
+  exit(EXIT_SUCCESS);
+}
