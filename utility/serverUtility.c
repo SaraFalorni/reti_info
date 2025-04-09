@@ -225,7 +225,12 @@ void playquiz(int themeChosen, char* nickname, int client_fd) {
         perror("Errore nella ricezione della lunghezza della risposta");
         exit(EXIT_FAILURE);
       }
-      check_comand(client_fd,msg);
+      //se check_comand torna true vuol dire che è stata fatta una show score invece di rispondere, quindi va ripetuta la domanda precedente
+      if(check_comand(client_fd,msg)) {
+        i--;
+        continue;
+      }
+        
       
       //riceve la risposta ( sempre ricevendo prima il numero di byte)
       int lenR;
@@ -462,14 +467,20 @@ void print_completed_quiz(struct Player** rankings) {
 }
 
 //funzione che gestisce l'eventualità che il client abbia richiesto endquiz o showscore
-void check_comand(int client_fd,char* msg) {
+//torna true se deve continuare il flusso del quiz: quindi se il client ha risposto o ha fatto show scores correttamente
+//false se deve uscire dal flusso a causa di endquiz
+bool check_comand(int client_fd,char* msg) {
   //se ha ricevuto MSG_OK continua normalmente
   //se ha ricevuto MSG_RK rimanda alla funzione do_show_score(client_fd)
   //se ha ricevuto MSG_EX rimanda alla funzione do_endquiz(client_fd)
-  if(strcmp(MSG_RK,msg) == 0) 
+  if(strcmp(MSG_RK,msg) == 0) {
     do_show_score(client_fd);
+    return true;
+  }
+    
   else if(strcmp(MSG_EX,msg) == 0) 
     do_endquiz(client_fd);
+  return false;
 }
 
 void do_show_score(int client_fd) {

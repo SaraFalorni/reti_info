@@ -213,7 +213,11 @@ void playGame(int client_fd) {
     
     remove_spaces(risp); //elimina eventuali spazi iniziali o finali
     
-    checkComand(client_fd,risp); 
+    //se check_comand torna true vuol dire che è stata fatta una show score invece di rispondere, quindi va ripetuta la domanda precedente
+    if(checkComand(client_fd,risp)) {
+      i--;
+      continue;
+    }
 
   }//chiude for
 }
@@ -245,7 +249,7 @@ void send_answer(int client_fd,char* risp) {
 }
 
 //ogni volta che il client sta partecipando ad un quiz può richiedere i comandi showscore o endquiz. questa funzione gestisce questa possibilità
-void checkComand(int client_fd,char* risp) {
+bool checkComand(int client_fd,char* risp) {
   //manda MSG_OK al server se il client ha risposto alla domanda
   //manda MSG_RK al server se il client ha richiesto show score
   //manda MSG_EX al server se il client ha richiesto endquiz
@@ -255,6 +259,7 @@ void checkComand(int client_fd,char* risp) {
       exit(EXIT_FAILURE);
     }
     showScore(client_fd);
+    return true;
   }
   else if(strcmp(ENDQUIZ,risp) == 0) {
     if(send(client_fd,MSG_EX,MSG_LEN,0)== -1) { 
@@ -262,6 +267,7 @@ void checkComand(int client_fd,char* risp) {
       exit(EXIT_FAILURE);
     }
     exitGame(client_fd);
+    return false;
   }
   else {
     if(send(client_fd,MSG_OK,MSG_LEN,0)== -1) { 
@@ -269,8 +275,8 @@ void checkComand(int client_fd,char* risp) {
       exit(EXIT_FAILURE);
     }
     send_answer(client_fd,risp);
+    return false;
   }
-  return;
 }
 
 void showScore(int client_fd) { 

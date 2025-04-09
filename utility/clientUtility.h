@@ -6,5 +6,5 @@ void exitGame(int client_fd); //da implementare
 void showQuizThemes(int client_fd);
 void playGame(int client_fd);
 void showScore(int client_fd);
-void checkComand(int client_fd,char* risp);
+bool checkComand(int client_fd,char* risp);
 void send_answer(int client_fd,char* risp);
