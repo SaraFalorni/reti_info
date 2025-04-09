@@ -276,15 +276,11 @@ int updatePoints(int numq,char* bufR,int themeChosen,char* nickname) {
   //lock sul mutex
   pthread_mutex_lock(&lockPlayers);
   struct Player* ptr = get_player(current_session.players, nickname);
-    int i = 0;
-    /*while(strcmp(ptr->theme[i].name,current_session.availableThemes[themeChosen]) != 0 && i < current_session.num_themes ) {
-    i++;
-  } */
-  if(ptr->themePoints[i] == -1) //se è la prima domanda
-      ptr->themePoints[i] = 0;
+  if(ptr->themePoints[themeChosen] == -1) //se è la prima domanda
+      ptr->themePoints[themeChosen] = 0;
       
   if(check_answer(bufFile, bufR,numq)) {
-    ptr->themePoints[i]++;
+    ptr->themePoints[themeChosen]++;
     //unlock mutex
     pthread_mutex_unlock(&lockPlayers);
     return 1;
@@ -460,14 +456,16 @@ void print_rankings(struct Player** rankings) {
 }
 
 void print_completed_quiz(struct Player** rankings) {
-  
+  bool first;
   for(int i = 0; i < current_session.num_themes ; i++) {
     struct Player* current_player = rankings[i];
-    
-    if(current_player != NULL) 
-      printf("\nQuiz Tema %d completato\n",i+1);
-    
+    first = true;
+        
     while(current_player != NULL && *current_player->themeCompleted == true) {
+      if(first) {
+        printf("\nQuiz Tema %d completato\n",i+1);
+        first = false;
+      }
       printf("- %s\n",current_player->nickname);
       current_player = current_player->next;
     }
