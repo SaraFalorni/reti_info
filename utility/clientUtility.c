@@ -214,8 +214,12 @@ void playGame(int client_fd) {
     remove_spaces(risp); //elimina eventuali spazi iniziali o finali
     
     checkComand(client_fd,risp); 
-    
-    //manda la risposta al server
+
+  }//chiude for
+}
+
+void send_answer(int client_fd,char* risp) {
+  //manda la risposta al server
     int lenR = strlen(risp)+1;
     if(send(client_fd, &lenR, sizeof(int),0)== -1) { //invio lunghezza della risposta
         perror("Errore in send() della lunghezza della risposta");
@@ -238,11 +242,9 @@ void playGame(int client_fd) {
     }
     else
       printf("\nRisposta Errata\n");
-    
-  }//chiude for
 }
 
-//ogni volta che il client sta partecipando ad un quiz può richiedere i cmandi showscore o endquiz. questa funzione gestisce questa possibilità
+//ogni volta che il client sta partecipando ad un quiz può richiedere i comandi showscore o endquiz. questa funzione gestisce questa possibilità
 void checkComand(int client_fd,char* risp) {
   //manda MSG_OK al server se il client ha risposto alla domanda
   //manda MSG_RK al server se il client ha richiesto show score
@@ -262,11 +264,13 @@ void checkComand(int client_fd,char* risp) {
     exitGame(client_fd);
   }
   else {
-    if(send(client_fd,MSG_EX,MSG_LEN,0)== -1) { 
-      perror("Errore in send() del endquiz");
+    if(send(client_fd,MSG_OK,MSG_LEN,0)== -1) { 
+      perror("Errore in send() del normale continuo di gioco");
       exit(EXIT_FAILURE);
     }
-  }   
+    send_answer(client_fd,risp);
+  }
+  return;
 }
 
 void showScore(int client_fd) { 
@@ -284,7 +288,8 @@ void showScore(int client_fd) {
       perror("Errore nella ricezione del numero di giocatori in classifica");
       exit(EXIT_FAILURE);
     } 
-  printf("\nPunteggio tema %d\n",i);
+  if(num_ranked > 0)
+    printf("\nPunteggio tema %d\n",i+1);
   for(int k = 0; k < num_ranked ; k++) {
   //riceve la lunghezza del nickname
     int len;

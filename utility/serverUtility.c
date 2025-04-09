@@ -51,14 +51,15 @@ void show_overview() {
 void* client_handler(void* arg) {
   int client_fd = *(int*)arg;
   free(arg); //????
+    
+  //il primo msg che riceve è il nickname
+  char nickname[MAXCHAR_NICKNAME];
+  get_nickname(client_fd,nickname);
   
   struct Player** rankings = get_theme_rankings();
   print_rankings(rankings);
   print_completed_quiz(rankings);
   
-  //il primo msg che riceve è il nickname
-  char nickname[MAXCHAR_NICKNAME];
-  get_nickname(client_fd,nickname);
   while(1) {
   //una volta registrato il nuovo giocatore invia i temi disponibili
   send_themes(client_fd, nickname);
@@ -241,7 +242,7 @@ void playquiz(int themeChosen, char* nickname, int client_fd) {
     
     //calcolo punteggio
     int p = updatePoints(i,bufR,themeChosen,nickname);
-    printf("risposta: %s punteggio domanda: %d\n",bufR,p);
+    
     //manda feedback sulla risposta data al client
     if(p == 1) {   
     //messaggio corretta al client
@@ -434,7 +435,7 @@ void print_rankings(struct Player** rankings) {
     struct Player* current_player = rankings[i];
     
     if(current_player != NULL) 
-      printf("\nPunteggio tema %d\n",i);
+      printf("\nPunteggio tema %d\n",i+1);
     
     while(current_player != NULL) {
       printf("- %s %d\n",current_player->nickname, *current_player->themePoints);
@@ -450,7 +451,7 @@ void print_completed_quiz(struct Player** rankings) {
     struct Player* current_player = rankings[i];
     
     if(current_player != NULL) 
-      printf("\nQuiz Tema %d completato\n",i);
+      printf("\nQuiz Tema %d completato\n",i+1);
     
     while(current_player != NULL && *current_player->themePoints == NUM_Q) {
       printf("- %s\n",current_player->nickname);
@@ -465,9 +466,9 @@ void check_comand(int client_fd,char* msg) {
   //se ha ricevuto MSG_OK continua normalmente
   //se ha ricevuto MSG_RK rimanda alla funzione do_show_score(client_fd)
   //se ha ricevuto MSG_EX rimanda alla funzione do_endquiz(client_fd)
-  if(strcmp(SHOWSCORE,msg) == 0) 
+  if(strcmp(MSG_RK,msg) == 0) 
     do_show_score(client_fd);
-  else if(strcmp(ENDQUIZ,msg) == 0) 
+  else if(strcmp(MSG_EX,msg) == 0) 
     do_endquiz(client_fd);
 }
 
@@ -503,7 +504,7 @@ void do_show_score(int client_fd) {
         exit(EXIT_FAILURE);
       }
       //invio del punteggio del giocatore
-      if(send(client_fd,&current_player->themePoints,sizeof(int),0) == -1) { 
+      if(send(client_fd,&current_player->themePoints[0],sizeof(int),0) == -1) { 
         perror("Errore in send() del punteggio (ranking)");
         exit(EXIT_FAILURE);
       } 

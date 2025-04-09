@@ -85,7 +85,6 @@ bool check_answer(const char *theme, char* answer, int numQ) {
     char *right_answer = strtok(buf,delimitator);
 
     while(right_answer != NULL) {
-        printf("giusta : !%s! data: !%s! \n ", right_answer,answer_up);
         if(strcmp(answer_up,right_answer) == 0) {
             //confronto le stringhe tutte in upper case per valutarne solo il contenuto
             return true;
