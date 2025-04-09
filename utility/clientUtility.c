@@ -4,10 +4,10 @@ void showMainMenu(int client_fd) {
     int choice = 0;
     printf("Trivia Quiz\n");
 
-    for(int i = 0 ; i < 20; i++)
+    for(int i = 0 ; i < NUM_SEPARATOR; i++)
         printf("+");
     printf("\nMenù:\n1 - Comincia una sessione di Trivia\n2 - Esci\n");
-    for(int i = 0 ; i < 20; i++)
+    for(int i = 0 ; i < NUM_SEPARATOR; i++)
         printf("+");
     do {
         printf("\nLa tua scelta:  ");
@@ -37,36 +37,44 @@ void chooseNickname(int client_fd) {
     char nickname[MAXCHAR_NICKNAME];
     printf("Trivia Quiz\n");
 
-    for(int i = 0 ; i < 20; i++)
+    for(int i = 0 ; i < NUM_SEPARATOR; i++)
         printf("+");
         
-  char msg[MSG_LEN];
-  while(strcmp(MSG_NO, msg) || msg[0] == '\n') {
-    while(fgets(nickname, MAXCHAR_NICKNAME, stdin) == NULL || nickname[0] == '\n') {
-        printf("\nScegli un nickname (deve essere univoco) :\n ");
-    }    
+  char msg[MSG_LEN] = "";
+  while(1) {
     
+    printf("\nScegli un nickname (deve essere univoco) :\n ");
+    //se preme invio senza inserire niente 
+    while(fgets(nickname, MAXCHAR_NICKNAME, stdin) == NULL || nickname[0] == '\n') {
+      continue; 
+    }  
+    
+    //nickname inserito
+    
+   //prima di inviare il nickname al server tolgo '\n'
+    if(nickname[strlen(nickname)-1] == '\n')
+      nickname[strlen(nickname)-1] = '\0';
+    //manda il nickname scelto al server che risponde con MSG_OK se è utilizzabile, MSG_NO altrimenti  
     if(send(client_fd, nickname, MAXCHAR_NICKNAME, 0) == -1) {
       perror("Errore in send() del nickname");
       exit(EXIT_FAILURE);
     }
-
-    ssize_t bytes_received = recv(client_fd, msg, MSG_LEN, 0);
     
-    if(bytes_received == -1) {
+    //ricezione risposta del server
+    if(recv(client_fd, msg, MSG_LEN, 0) == -1) {
       perror("Errore in recv() di conferma nickname");
       exit(EXIT_FAILURE);
     }
     
-    if(strcmp(msg,MSG_OK)) {
+    //nickname accettabile
+    if(strcmp(msg,MSG_OK) == 0) {
       break;
     }
-  }    
+    else //nickname già in uso 
+      printf("Nickname già utilizzato\n");
+  }
 }
 
-void exitGame() {
-    printf("exit game\n");
-}
 
 void showQuizThemes(int client_fd) {
 //riceve il numero di temi disponibili dal server
@@ -84,14 +92,6 @@ void showQuizThemes(int client_fd) {
     perror("Errore in send() dell'ok alla ricezione del numero di temi\n");
     exit(EXIT_FAILURE);
   }   
-  printf("client manda segnale ricezione\n");
-  /*
-  else {
-    //messaggio non ok al server
-    if(send(client_fd, MSG_NO, MSG_LEN, 0) == -1) {
-      perror("Errore in send() del no alla ricezione del numero di temi");
-      exit(EXIT_FAILURE);
-    } */
   
   //server inizia a mandare i nomi dei temi disponibili 
   char *themes[num_themes];
@@ -123,7 +123,7 @@ void showQuizThemes(int client_fd) {
   int choice = 0;
     printf("Quiz disponibili\n");
 
-    for(int i = 0 ; i < 20; i++)
+    for(int i = 0 ; i < NUM_SEPARATOR; i++)
         printf("+");
     int n = 0;//intero per "tradurre" l'indice dato al client con quello del server
     for(int i = 0; i < num_themes ; i++) {
@@ -169,7 +169,7 @@ void showQuizThemes(int client_fd) {
     
     //stampa titolo del quiz
     printf("\nQuiz - %s\n", themes[choice]);
-    for(int i = 0 ; i < 20; i++)
+    for(int i = 0 ; i < NUM_SEPARATOR; i++)
         printf("+");
     printf("\n");
 }
@@ -188,7 +188,7 @@ void playGame(int client_fd) {
       exit(EXIT_FAILURE);
     }
     
-    printf("%s\n",buf);
+    printf("\n%s\n",buf);
     
     char risp[MAXCHAR_LINE];
     strcpy(risp,"0");
@@ -213,6 +213,8 @@ void playGame(int client_fd) {
     
     remove_spaces(risp); //elimina eventuali spazi iniziali o finali
     
+    checkComand(client_fd,risp); 
+    
     //manda la risposta al server
     int lenR = strlen(risp)+1;
     if(send(client_fd, &lenR, sizeof(int),0)== -1) { //invio lunghezza della risposta
@@ -224,19 +226,59 @@ void playGame(int client_fd) {
         exit(EXIT_FAILURE);
       }
      
-    char msg[MSG_LEN+1];
+    char msg[MSG_LEN];
     //server dice se la risposta è corretta o meno
     if(recv_all_bytes(client_fd,msg,MSG_LEN) <= 0) {
       perror("Errore in recv() del feedback sulla risposta");
       exit(EXIT_FAILURE);
     }
-    printf("%d %s\n",strcmp(msg,MSG_OK),msg);
-    msg[MSG_LEN] = '\0';
+     
     if(strcmp(msg,MSG_OK) == 0) {
-      printf("Risposta Corretta\n");
+      printf("\nRisposta Corretta\n");
     }
     else
-      printf("Risposta Errata\n");
+      printf("\nRisposta Errata\n");
     
   }//chiude for
 }
+
+void showScore(int client_fd) {
+
+  
+}
+
+
+//ogni volta che il client sta partecipando ad un quiz può richiedere i cmandi showscore o endquiz. questa funzione gestisce questa possibilità
+void checkComand(int client_fd,char* risp) {
+  //manda MSG_OK al server se il client ha risposto alla domanda
+  //manda MSG_RK al server se il client ha richiesto show score
+  //manda MSG_EX al server se il client ha richiesto endquiz
+  if(strcmp(SHOWSCORE,risp) == 0) {
+    if(send(client_fd,MSG_RK,MSG_LEN,0)== -1) { 
+      perror("Errore in send() del show score");
+      exit(EXIT_FAILURE);
+    }
+    showScore(client_fd);
+  }
+  else if(strcmp(ENDQUIZ,risp) == 0) {
+    if(send(client_fd,MSG_EX,MSG_LEN,0)== -1) { 
+      perror("Errore in send() del endquiz");
+      exit(EXIT_FAILURE);
+    }
+    exitGame(client_fd);
+  }
+  else {
+    if(send(client_fd,MSG_EX,MSG_LEN,0)== -1) { 
+      perror("Errore in send() del endquiz");
+      exit(EXIT_FAILURE);
+    }
+  }   
+}
+
+void showScore(int client_fd) {
+}
+
+void exitGame(int client_fd) {
+    printf("exit game\n");
+}
+

@@ -20,13 +20,41 @@ void init_session() {
     current_session.availableThemes[i] = malloc(len_themeName);
     memcpy(current_session.availableThemes[i],buf,len_themeName);
     
-  } 
+  }
+  
+  show_overview();
   return;
+}
+
+void show_overview() {
+    printf("Trivia Quiz\n");
+
+    for(int i = 0 ; i < NUM_SEPARATOR; i++)
+        printf("+");
+        
+    printf("\nTemi:\n");
+    for(int i = 0 ; i < current_session.num_themes ; i++) {
+      printf("%d - %s\n",i+1,current_session.availableThemes[i]);
+    }
+    
+    for(int i = 0 ; i < NUM_SEPARATOR; i++)
+        printf("+");
+        
+   pthread_mutex_lock(&lockPlayers); 
+    printf("\nPartecipanti (%d)\n",current_session.num_players);
+    for(int i = 0 ; i < current_session.num_players ; i++) {
+      printf("- %s\n", get_player_index(current_session.players,i)->nickname );
+    }  
+   pthread_mutex_unlock(&lockPlayers);
 }
 
 void* client_handler(void* arg) {
   int client_fd = *(int*)arg;
   free(arg); //????
+  
+  struct Player** rankings = get_theme_rankings();
+  print_rankings(rankings);
+  print_completed_quiz(rankings);
   
   //il primo msg che riceve è il nickname
   char nickname[MAXCHAR_NICKNAME];
@@ -50,15 +78,7 @@ bool insert_player(char* nickname) {
   
   struct Player* new_player;
   new_player = current_session.players;
-  
-  /*while(new_player != NULL) {
-    if( strcmp(nickname,new_player->nickname)) {
-      pthread_mutex_lock(&lockPlayers);
-      return false;
-    }
-    new_player = new_player->next;
-  }*/
-  
+
   if(get_player(current_session.players,nickname) != NULL) {
     pthread_mutex_unlock(&lockPlayers);
       return false;
@@ -70,12 +90,12 @@ bool insert_player(char* nickname) {
   
   //INIZIALIZZAZIONE DEI TEMI CON POINTS = -1
   
-  new_player->theme = (struct Theme*)malloc(current_session.num_themes * sizeof(struct Theme));
+  new_player->themePoints = malloc(current_session.num_themes * sizeof(int));
   for(int i = 0; i < current_session.num_themes ; i++){
-    size_t len_themeName = strlen(current_session.availableThemes[i]) + 1;
+    /*size_t len_themeName = strlen(current_session.availableThemes[i]) + 1;
     new_player->theme[i].name = (char*)malloc(len_themeName);
-    strcpy(new_player->theme[i].name, current_session.availableThemes[i]);
-    new_player->theme[i].points = -1;
+    strcpy(new_player->theme[i].name, current_session.availableThemes[i]);*/
+    new_player->themePoints[i] = -1;
   }
   new_player->next = NULL;
   current_session.num_players++;
@@ -89,12 +109,7 @@ bool insert_player(char* nickname) {
     
   //sblocco il mutex
   pthread_mutex_unlock(&lockPlayers);
-  
-  
-  //print_session(current_session);
-  //giocatore inserito correttamente
-  
-  
+
   return true;
 }
 
@@ -102,27 +117,30 @@ bool insert_player(char* nickname) {
 void get_nickname(int client_fd, char* name) {
   char nickname[MAXCHAR_NICKNAME];
   
-  ssize_t bytes_received = recv(client_fd, nickname, MAXCHAR_NICKNAME, 0);
-  
-  if(bytes_received == -1) {
+  while(1) {
+    if(recv(client_fd, nickname, MAXCHAR_NICKNAME, 0) == -1) {
     perror("Errore in recv() per nickname");
     exit(EXIT_FAILURE);
+    }
+  
+    if(insert_player(nickname)) {   
+      //messaggio di ok a client
+      if(send(client_fd, MSG_OK, MSG_LEN, 0) == -1) {
+        perror("Errore in send() dell'ok al nickname");
+        exit(EXIT_FAILURE);
+      }    
+      break;
+    }
+    else {
+      //messaggio non ok al client
+      if(send(client_fd, MSG_NO, MSG_LEN, 0) == -1) {
+        perror("Errore in send() del no al nickname");
+        exit(EXIT_FAILURE);
+        } 
+    }
   }
   
-  if(insert_player(nickname)) {   
-    //messaggio di ok a client
-    if(send(client_fd, MSG_OK, MSG_LEN, 0) == -1) {
-      perror("Errore in send() dell'ok al nickname");
-      exit(EXIT_FAILURE);
-    }    
-  }
-  else {
-    //messaggio non ok al client
-    if(send(client_fd, MSG_NO, MSG_LEN, 0) == -1) {
-      perror("Errore in send() del no al nickname");
-      exit(EXIT_FAILURE);
-    } 
-  }
+  
   strcpy(name,nickname);
 }
 
@@ -152,7 +170,7 @@ void send_themes(int client_fd, char* nickname) {
       
       //unlock mutex
       pthread_mutex_unlock(&lockPlayers);
-      if(ptr->theme[i].points != -1) {
+      if(ptr->themePoints[i] != -1) {
         int len = -1;
       
         if(send(client_fd, &len, sizeof(int),0)== -1) { //invio di -1 per indicare che non è un tema disponibile
@@ -200,6 +218,14 @@ void playquiz(int themeChosen, char* nickname, int client_fd) {
         exit(EXIT_FAILURE);
       }
       
+      //il primo messaggio che riceve è per indicare se il client ha normalmente risposto o richiesto schowscore o endquiz
+      char* msg[MSG_LEN];
+      if(recv_all_bytes(client_fd,msg,MSG_LEN) <= 0) {
+        perror("Errore nella ricezione della lunghezza della risposta");
+        exit(EXIT_FAILURE);
+      }
+      check_comand(client_fd,msg);
+      
       //riceve la risposta ( sempre ricevendo prima il numero di byte)
       int lenR;
     if(recv_all_bytes(client_fd,&lenR, sizeof(int)) <= 0) {
@@ -242,14 +268,14 @@ int updatePoints(int numq,char* bufR,int themeChosen,char* nickname) {
   pthread_mutex_lock(&lockPlayers);
   struct Player* ptr = get_player(current_session.players, nickname);
     int i = 0;
-    while(strcmp(ptr->theme[i].name,current_session.availableThemes[themeChosen]) != 0 && i < current_session.num_themes ) {
+    /*while(strcmp(ptr->theme[i].name,current_session.availableThemes[themeChosen]) != 0 && i < current_session.num_themes ) {
     i++;
-  } 
-  if(ptr->theme[i].points == -1) //se è la prima domanda
-      ptr->theme[i].points = 0;
+  } */
+  if(ptr->themePoints[i] == -1) //se è la prima domanda
+      ptr->themePoints[i] = 0;
       
   if(check_answer(bufFile, bufR,numq)) {
-    ptr->theme[i].points++;
+    ptr->themePoints[i]++;
     //unlock mutex
     pthread_mutex_unlock(&lockPlayers);
     return 1;
@@ -275,3 +301,179 @@ struct Player* get_player(struct Player* current_player,char* nickname) {
   return get_player(current_player->next, nickname);
 }
 
+//dato un intero ritorna un puntatore al giocatore in quella posizione nella lista curre_session.players
+//l'uso di questa funzione deve essere fatto all'interno di un blocco critico
+struct Player* get_player_index(struct Player* current_player,int index) {
+  if(current_player == NULL || index < 0)
+    return NULL;
+    
+  if(index == 0)
+    return current_player;
+    
+  return get_player_index(current_player->next, index-1);
+}
+
+
+//restituisce la classifica per tutti i temi 
+//il tema è individuato dall'indice (corrispondente al numero di riga che ha nel documento ./txt/indiceTemi.txt)
+//l'uso di questa funzione deve essere fatto all'interno di un blocco critico
+struct Player** get_theme_rankings() {
+   
+  // array di liste (classifiche) per tema, l'indice dell'array identifica il tema
+  struct Player** rankings = (struct Player**)malloc(current_session.num_themes * sizeof(struct Player*));
+     
+  // per ordinare le classifiche utilizza Counting sort
+  //crea un array di 5+1 elementi i cui indici identificano il punteggio ottenuto nel quiz per quel tema
+  //ogni elemento è una lista ai giocatori che hanno ottenuto quel punteggio
+  struct Player*** buckets = (struct Player***)malloc(current_session.num_themes * sizeof(struct Player**));
+  struct Player*** bucket_tails = (struct Player***)malloc(current_session.num_themes * sizeof(struct Player**));//puntatore all'ultimo elemento, per inserimento ordinato
+ 
+  // Inizializzazione degli array di supporto
+  for (int i = 0; i < current_session.num_themes; i++) {
+    //i è l'indice del tema
+    buckets[i] = (struct Player**)malloc((NUM_Q+1) * sizeof(struct Player*));
+    bucket_tails[i] = (struct Player**)malloc((NUM_Q+1) * sizeof(struct Player*));
+
+    for (int k = 0; k < (NUM_Q+1); k++) {
+    //k è l'indice del punteggio
+        buckets[i][k] = NULL;//i-esimo tema k-esimo punteggio
+        bucket_tails[i][k] = NULL;
+    }
+  }
+ 
+  // Scansione dei giocatori
+  struct Player* current_player = current_session.players;
+  
+  while (current_player != NULL) { //per ogni giocatore
+    // Per ogni tema, creiamo copie del giocatore solo se il punteggio è valido
+    for (int i = 0; i < current_session.num_themes; i++) {
+      //i è l'indice del tema    
+
+      // Consideriamo solo i giocatori che hanno giocato a quell quiz, cioè quelli con punteggio diverso da -1
+      if (current_player->themePoints[i] != -1) {
+      
+        //copia il giocatore solo con il punteggio del relativo tema
+        struct Player* player_copy = copy_player(current_player,i);
+             
+        // Inserisce nel bucket in base al punteggio
+        if (buckets[i][current_player->themePoints[i]] == NULL) {
+          //se è il primo giocatore inserito
+          buckets[i][current_player->themePoints[i]] = player_copy;
+          bucket_tails[i][current_player->themePoints[i]] = player_copy;
+        } 
+        else {
+          //se è già presente un giocatore nella lista del bucket
+          bucket_tails[i][current_player->themePoints[i]]->next = player_copy;
+          bucket_tails[i][current_player->themePoints[i]] = player_copy;
+        }
+      }
+  }
+  current_player = current_player->next;//giocatore successivo
+  }
+  
+  //ordinamento delle classifiche dai bucket a rankings
+  get_final_rankings(rankings,buckets,bucket_tails );
+ 
+  // Pulizia memoria delle strutture temporanee
+  for (int theme = 0; theme < current_session.num_themes; theme++) {
+      free(buckets[theme]);
+      free(bucket_tails[theme]);
+  }
+  free(buckets);
+  free(bucket_tails);
+ 
+  return rankings;
+}
+
+//funzione ausiliaria di get_theme_rankings() per creare le classifiche copia un giocatore con solo il punteggio relativo a un tema
+struct Player* copy_player(struct Player* current_player,int index_theme) {
+  // Crea una copia del giocatore
+  struct Player* player_copy = (struct Player*)malloc(sizeof(struct Player));
+ 
+  player_copy->nickname = malloc(strlen(current_player->nickname));
+  strcpy(player_copy->nickname,current_player->nickname);
+
+  //basta memorizzare il punteggio relativo a solo quel tema
+  player_copy->themePoints = malloc(sizeof(int));
+  
+  player_copy->themePoints[index_theme] = current_player->themePoints[index_theme];
+  player_copy->next = NULL;
+  return player_copy;
+}
+
+//funzione ausiliaria di get_theme_rankings() per creare le classifiche
+//ordina in una sola lista per tema tutti i giocatori con relativo punteggio in ordine decrescente utilizzando i bucket già creati
+struct Player** get_final_rankings(struct Player** rankings,struct Player*** buckets,struct Player*** bucket_tails ) {
+// Costruiamo le liste risultanti per ogni tema
+  for (int i = 0; i < current_session.num_themes; i++) {
+    rankings[i] = NULL;
+    struct Player* ranking_tail = NULL;
+   
+    // Combina i bucket in ordine decrescente 
+    for (int points = NUM_Q; points >= 0; points--) {
+      if (buckets[i][points] != NULL) {
+        if (rankings[i] == NULL) {//se non c'è ancora niente in classifica
+          rankings[i] = buckets[i][points];
+          ranking_tail = bucket_tails[i][points];
+        } 
+        else {//se c'è già qualcosa in classifica aggiungo in fondo alla coda
+          ranking_tail->next = buckets[i][points];
+          ranking_tail = bucket_tails[i][points];
+        }
+      }
+    }
+  }
+  return rankings;
+}
+
+void print_rankings(struct Player** rankings) {
+  
+  for(int i = 0; i < current_session.num_themes ; i++) {
+    struct Player* current_player = rankings[i];
+    
+    if(current_player != NULL) 
+      printf("\nPunteggio tema %d\n",i);
+    
+    while(current_player != NULL) {
+      printf("- %s %d\n",current_player->nickname, *current_player->themePoints);
+      current_player = current_player->next;
+    }
+  }
+  
+}
+
+void print_completed_quiz(struct Player** rankings) {
+  
+  for(int i = 0; i < current_session.num_themes ; i++) {
+    struct Player* current_player = rankings[i];
+    
+    if(current_player != NULL) 
+      printf("\nQuiz Tema %d completato\n",i);
+    
+    while(current_player != NULL && *current_player->themePoints == NUM_Q) {
+      printf("- %s\n",current_player->nickname);
+      current_player = current_player->next;
+    }
+  }
+  
+}
+
+//funzione che gestisce l'eventualità che il client abbia richiesto endquiz o showscore
+void check_comand(int client_fd,char* msg) {
+  //se ha ricevuto MSG_OK continua normalmente
+  //se ha ricevuto MSG_RK rimanda alla funzione do_show_score(client_fd)
+  //se ha ricevuto MSG_EX rimanda alla funzione do_endquiz(client_fd)
+  if(strcmp(SHOWSCORE,risp) == 0) {
+    do_show_score(client_fd)
+  else if(strcmp(ENDQUIZ,risp) == 0) {
+    do_endquiz(client_fd)
+}
+
+void do_show_score(int client_fd) {
+
+}
+
+
+void do_endquiz(int client_fd) {
+
+}

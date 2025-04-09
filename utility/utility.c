@@ -113,25 +113,6 @@ void remove_spaces(char* str) {
 
 //-------------------------------------------------------------------------------
 
-//restituisce la classifica per un tema
-void get_theme_leaderboard(char* theme) {
-
-    FILE *file_leaderboard = fopen(theme,"r");
-
-    if(!file_leaderboard) {
-        perror("Errore nell'apertura del file");
-        return;
-    }
-
-    FILE *file_themes_index = fopen("../txt/","r");
-
-    if(!file_themes_index) {
-        perror("Errore nell'apertura del file");
-        return;
-    }
-
-
-}
 //------------------------------------------------------------------
 //dato un numero restituisce il nome del corrispondente tema
 void get_theme_name(int num, char* buf) {
@@ -168,8 +149,6 @@ int quanti_temi() {
   if(endptr == buf || *endptr != '\0') {
     return 0; //conversione fallita
   }
-  
-  printf("in quanti temi: numero %d, stringa %s \n", num, buf);
   return num;
 }
 
@@ -207,7 +186,7 @@ void print_session(struct Session* current_session) {
   {
     printf("giocatore: %s\n",ptr->nickname);
     for(int i = 0 ; i < current_session->num_themes ; i++) 
-      printf(" punteggio %s: %d\n", current_session->availableThemes[i], ptr->theme[i].points);
+      printf(" punteggio %s: %d\n", current_session->availableThemes[i], ptr->themePoints[i]);
     printf("\n");
     ptr= ptr->next;
   }
