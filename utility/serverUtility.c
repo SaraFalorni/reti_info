@@ -219,7 +219,7 @@ void playquiz(int themeChosen, char* nickname, int client_fd) {
       }
       
       //il primo messaggio che riceve è per indicare se il client ha normalmente risposto o richiesto schowscore o endquiz
-      char* msg[MSG_LEN];
+      char msg[MSG_LEN];
       if(recv_all_bytes(client_fd,msg,MSG_LEN) <= 0) {
         perror("Errore nella ricezione della lunghezza della risposta");
         exit(EXIT_FAILURE);
@@ -340,7 +340,7 @@ struct Player** get_theme_rankings() {
         bucket_tails[i][k] = NULL;
     }
   }
- 
+  pthread_mutex_lock(&lockPlayers);
   // Scansione dei giocatori
   struct Player* current_player = current_session.players;
   
@@ -373,7 +373,9 @@ struct Player** get_theme_rankings() {
   
   //ordinamento delle classifiche dai bucket a rankings
   get_final_rankings(rankings,buckets,bucket_tails );
- 
+  
+  pthread_mutex_unlock(&lockPlayers);
+  
   // Pulizia memoria delle strutture temporanee
   for (int theme = 0; theme < current_session.num_themes; theme++) {
       free(buckets[theme]);
@@ -463,17 +465,71 @@ void check_comand(int client_fd,char* msg) {
   //se ha ricevuto MSG_OK continua normalmente
   //se ha ricevuto MSG_RK rimanda alla funzione do_show_score(client_fd)
   //se ha ricevuto MSG_EX rimanda alla funzione do_endquiz(client_fd)
-  if(strcmp(SHOWSCORE,risp) == 0) {
-    do_show_score(client_fd)
-  else if(strcmp(ENDQUIZ,risp) == 0) {
-    do_endquiz(client_fd)
+  if(strcmp(SHOWSCORE,msg) == 0) 
+    do_show_score(client_fd);
+  else if(strcmp(ENDQUIZ,msg) == 0) 
+    do_endquiz(client_fd);
 }
 
 void do_show_score(int client_fd) {
+  //manda il numero di temi
+  if(send(client_fd,&current_session.num_themes,sizeof(int),0)== -1) { 
+      perror("Errore in send() del numero di classifiche");
+      exit(EXIT_FAILURE);
+  }
 
+  struct Player** rankings = get_theme_rankings();
+  struct Player* current_player;
+  int num_ranked;
+  for(int i = 0 ; i < current_session.num_themes ; i++) {
+  current_player = rankings[i];
+  //manda il numero di giocatori nella i-esima classifica
+    num_ranked = count_ranked(rankings,i);
+    if(send(client_fd,&num_ranked,sizeof(int),0) == -1) { 
+      perror("Errore in send() del numero di giocatori nella classifica");
+      exit(EXIT_FAILURE);
+    }
+    
+    while(current_player != NULL) {
+      //invio lunghezza del nickname
+      int len = strlen(current_player->nickname);
+      if(send(client_fd, &len, sizeof(int),0)== -1) { 
+        perror("Errore in send() della lunghezza del nickname (ranking)");
+        exit(EXIT_FAILURE);
+      } 
+      //invio nickname del k-esimo classificato dell'i-esimo tema
+      if(send(client_fd,current_player->nickname,len,0)== -1) { 
+        perror("Errore in send() del nickname (ranking)");
+        exit(EXIT_FAILURE);
+      }
+      //invio del punteggio del giocatore
+      if(send(client_fd,&current_player->themePoints,sizeof(int),0) == -1) { 
+        perror("Errore in send() del punteggio (ranking)");
+        exit(EXIT_FAILURE);
+      } 
+      current_player = current_player->next;
+    }   
+  }
 }
 
 
 void do_endquiz(int client_fd) {
+printf("endquiz da fare");
+}
 
+int count_ranked(struct Player** rankings,int theme_index) {
+  if(rankings == NULL || theme_index < 0) 
+    return -1;
+    
+  if(rankings[theme_index] == NULL)
+    return 0;
+    
+  int num_players = 0;
+  struct Player* current_player = rankings[theme_index];
+  
+  while(current_player != NULL) {
+    num_players++;
+    current_player = current_player->next;
+  }
+  return num_players;
 }

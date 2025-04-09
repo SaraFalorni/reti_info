@@ -28,7 +28,7 @@ void showMainMenu(int client_fd) {
             chooseNickname(client_fd);
             break;
         case 2:
-            exitGame();
+            exitGame(client_fd);
             break;
     }    
 }
@@ -242,12 +242,6 @@ void playGame(int client_fd) {
   }//chiude for
 }
 
-void showScore(int client_fd) {
-
-  
-}
-
-
 //ogni volta che il client sta partecipando ad un quiz può richiedere i cmandi showscore o endquiz. questa funzione gestisce questa possibilità
 void checkComand(int client_fd,char* risp) {
   //manda MSG_OK al server se il client ha risposto alla domanda
@@ -275,8 +269,49 @@ void checkComand(int client_fd,char* risp) {
   }   
 }
 
-void showScore(int client_fd) {
+void showScore(int client_fd) { 
+//riceve il numero di temi, quindi il numero di classifiche massimo da stampare
+ int num_themes;
+ if(recv_all_bytes(client_fd,&num_themes, sizeof(int)) <= 0) {
+      perror("Errore nella ricezione del numero di temi (ranking)");
+      exit(EXIT_FAILURE);
+    }  
+
+ for(int i = 0; i < num_themes; i++) {
+ //riceve il numero di giocatori nella i-esima classifica
+  int num_ranked;
+  if(recv_all_bytes(client_fd,&num_ranked, sizeof(int)) <= 0) {
+      perror("Errore nella ricezione del numero di giocatori in classifica");
+      exit(EXIT_FAILURE);
+    } 
+  printf("\nPunteggio tema %d\n",i);
+  for(int k = 0; k < num_ranked ; k++) {
+  //riceve la lunghezza del nickname
+    int len;
+    if(recv_all_bytes(client_fd,&len, sizeof(int)) <= 0) {
+      perror("Errore nella ricezione della lunghezza del nickname (ranking)");
+      exit(EXIT_FAILURE);
+    }
+    //riceve il nickname
+    char* nickname = malloc(len);
+    if(recv_all_bytes(client_fd,nickname,len) <= 0) {
+      perror("Errore nella ricezione del nickname (ranking)");
+      exit(EXIT_FAILURE);
+    }
+    //riceve il punteggio del k-esimo classificato dell'i-esimo tema
+    int points;
+    if(recv_all_bytes(client_fd,&points, sizeof(int)) <= 0) {
+      perror("Errore nella ricezione del punteggio (ranking)");
+      exit(EXIT_FAILURE);
+    }
+    
+    printf("- %s %d\n",nickname,points);
+  }
+ }
 }
+
+
+
 
 void exitGame(int client_fd) {
     printf("exit game\n");
