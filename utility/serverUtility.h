@@ -23,3 +23,4 @@ bool check_comand(int client_fd,char* msg);
 void do_show_score(int client_fd);
 void do_endquiz(int client_fd);
 int count_ranked(struct Player** rankings,int theme_index);
+void delete_player(char* nickname);

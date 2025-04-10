@@ -134,8 +134,8 @@ void showQuizThemes(int client_fd) {
     }
     
     //caso in cui ha già giocato a tutti i quiz disponibili
-    if(n == num_themes-1) {
-      printf("Hai già partecipato a tutti i quiz disponibili, arrivederci!");
+    if(n == num_themes) {
+      printf("\nHai già partecipato a tutti i quiz disponibili, arrivederci!\n");
       exitGame(client_fd);
     }
         
@@ -223,6 +223,7 @@ void playGame(int client_fd,char* nickname) {
     }
 
   }//chiude for
+  printf("fine quiz in nickname %s\n",nickname);
 }
 
 void send_answer(int client_fd,char* risp) {
@@ -245,10 +246,10 @@ void send_answer(int client_fd,char* risp) {
     }
      
     if(strcmp(msg,MSG_OK) == 0) {
-      printf("\nRisposta Corretta\n");
+      printf("Risposta Corretta\n");
     }
     else
-      printf("\nRisposta Errata\n");
+      printf("Risposta Errata\n");
 }
 
 //ogni volta che il client sta partecipando ad un quiz può richiedere i comandi showscore o endquiz. questa funzione gestisce questa possibilità
@@ -269,6 +270,7 @@ bool checkComand(int client_fd,char* risp,char* nickname) {
       perror("Errore in send() del endquiz");
       exit(EXIT_FAILURE);
     }
+    printf("in checkComand nickname %s\n",nickname);
     endGame(client_fd,nickname);
     return false;
   }
@@ -328,8 +330,10 @@ void showScore(int client_fd) {
 
 
 void endGame(int client_fd,char* nickname) {
+int len = strlen(nickname)+1;
+printf("n endquiz nickname %s %d\n",nickname,len);
     //manda al server il nickname per permettere al server di cancellare il corrispondente Player 
-    int len = strlen(nickname);
+    
     if(send(client_fd, &len, sizeof(int),0)== -1) { //invio lunghezza del nickname
         perror("Errore in send() della lunghezza del nickname (endGame)");
         exit(EXIT_FAILURE);

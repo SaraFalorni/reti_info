@@ -484,7 +484,6 @@ bool check_comand(int client_fd,char* msg) {
     do_show_score(client_fd);
     return true;
   }
-    
   else if(strcmp(MSG_EX,msg) == 0) 
     do_endquiz(client_fd);
   return false;
@@ -545,34 +544,15 @@ void do_endquiz(int client_fd) {
       perror("Errore nella ricezione del nickname (endquiz)");
       exit(EXIT_FAILURE);
     }
+    printf("n endquiz nickname %s %d\n",nickname,len);
     
-    //eliminia il player corrispondente da current_session
-    pthread_mutex_lock(&lockPlayers);
-    struct Player* current_player = current_session.players;
-    struct Player* prec_player = NULL;
+    printf("entra nella do_enquiz prima di delete_player\n");
+    //deve cancellare il player da current_session
+    delete_player(nickname);
+    printf("entra nella do_enquiz dopo di delete_player\n");
     
-    while(current_player != NULL) {
-      if(strcmp(nickname, current_player->nickname) == 0) {
-        if(prec_player == NULL) {
-          //se è il primo della lista
-          current_session.players = current_player->next;
-        }
-        else {
-          prec_player->next = current_player->next;
-        }
-        
-        //libera la memoria allocata
-        free(current_player->nickname);
-        free(current_player->themePoints);
-        free(current_player);
-        break;
-      }
-      prec_player = current_player;
-      current_player = current_player->next;
-    }
-    
-    pthread_mutex_unlock(&lockPlayers);
-    
+    //libera la memoria
+    free(nickname);
     //chiude la comunicazione con il client
     close(client_fd);
     pthread_exit(NULL);
@@ -594,4 +574,38 @@ int count_ranked(struct Player** rankings,int theme_index) {
     current_player = current_player->next;
   }
   return num_players;
+}
+
+void delete_player(char* nickname) {
+  //eliminia il player corrispondente da current_session
+  printf("entra in delete_player\n");
+  pthread_mutex_lock(&lockPlayers);
+  struct Player* current_player = current_session.players;
+  struct Player* prec_player = NULL;
+
+  while(current_player != NULL) {
+    printf("paragona %s a %s\n",nickname, current_player->nickname);
+    if(strcmp(nickname, current_player->nickname) == 0) {
+      if(prec_player == NULL) {
+        //se è il primo della lista
+        current_session.players = current_player->next;
+        printf("\neliminato il primo\n");
+      }
+      else {
+        prec_player->next = current_player->next;
+        printf("\neliminato\n");
+      }
+      current_session.num_players--;
+      
+      //libera la memoria allocata
+      free(current_player->nickname);
+      free(current_player->themePoints);
+      free(current_player->themeCompleted);
+      free(current_player);
+      break;
+    }
+    prec_player = current_player;
+    current_player = current_player->next;
+  }
+  pthread_mutex_unlock(&lockPlayers);
 }
