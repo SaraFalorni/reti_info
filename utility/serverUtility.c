@@ -550,7 +550,7 @@ void do_endquiz(int client_fd) {
     //deve cancellare il player da current_session
     delete_player(nickname);
     printf("entra nella do_enquiz dopo di delete_player\n");
-    
+    show_overview();//da cancellare
     //libera la memoria
     free(nickname);
     //chiude la comunicazione con il client

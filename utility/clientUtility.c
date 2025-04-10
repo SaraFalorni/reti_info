@@ -330,23 +330,24 @@ void showScore(int client_fd) {
 
 
 void endGame(int client_fd,char* nickname) {
-int len = strlen(nickname)+1;
-printf("n endquiz nickname %s %d\n",nickname,len);
-    //manda al server il nickname per permettere al server di cancellare il corrispondente Player 
-    
-    if(send(client_fd, &len, sizeof(int),0)== -1) { //invio lunghezza del nickname
-        perror("Errore in send() della lunghezza del nickname (endGame)");
-        exit(EXIT_FAILURE);
-      } 
-    
-    if(send(client_fd, nickname, len, 0) == -1) {
-      perror("Errore in send() del nickname");
+  int len = strlen(nickname)+1;
+  //manda al server il nickname per permettere al server di cancellare il corrispondente Player 
+  
+  if(send(client_fd, &len, sizeof(int),0)== -1) { //invio lunghezza del nickname
+      perror("Errore in send() della lunghezza del nickname (endGame)");
       exit(EXIT_FAILURE);
-    }
-    strcpy(nickname, "\0");
-    //torna al main menu
-    showMainMenu(client_fd,nickname);
+    } 
+  
+  if(send(client_fd, nickname, len, 0) == -1) {
+    perror("Errore in send() del nickname");
+    exit(EXIT_FAILURE);
+  }
+  strcpy(nickname, "\0");
+  //torna al main menu
+  showMainMenu(client_fd,nickname);
 }
+
+
 
 void exitGame(int client_fd) {
   close(client_fd);
