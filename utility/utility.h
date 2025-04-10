@@ -10,6 +10,7 @@
 #include <ctype.h> //toupper()
 #include <pthread.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #define MAXCHAR_LINE 1024
 #define MAXCHAR_NICKNAME 20

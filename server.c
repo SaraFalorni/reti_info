@@ -47,6 +47,12 @@ int main(int argc, char *argv[]) {
 
     while(1) {
         int *client_fd = malloc(sizeof(int));
+        if(client_fd == NULL) {
+            //errore nel malloc
+            perror("Errore nel malloc");
+            exit(EXIT_FAILURE);
+        } 
+          
         //accettare connessione in arrivo
         if((*client_fd = accept(server_fd, (struct sockaddr*)&client_addr, &client_len)) == -1) {
             perror("Errore nell'accettazione della connesione");

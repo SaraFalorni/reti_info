@@ -1,6 +1,13 @@
 #include "./utility/clientUtility.h"
 
+void sigpipe_handler() {
+//ignora SIG_PIPE, gestito dalle funzioni recv_all_bytes e send_all_bytes
+  signal(SIGPIPE, SIG_IGN);
+}
+
 int main(int argc, char *argv[]) {
+    sigpipe_handler();
+
     int client_fd;
     struct sockaddr_in server_addr;
     char *server_ip = "127.0.0.1";
@@ -31,16 +38,24 @@ int main(int argc, char *argv[]) {
     }
     
     char nickname[MAXCHAR_NICKNAME] = "";
-    //menu mostrato all'inizio del gioco
-    showMainMenu(client_fd,nickname);
+    
     
     while(1) {
-    //nel caso in cui sia stato fatto endQuiz deve essere ristampato il menu iniziale
-    if(strlen(nickname) == 0) {
-      showMainMenu(client_fd,nickname);
-    }
-      showQuizThemes(client_fd);
-      playGame(client_fd, nickname);
+        //menu mostrato all'inizio del gioco
+        int choice = showMainMenu(client_fd,nickname);//1 se vuole giocare, 2 se vuole uscire
+        
+        //nel caso in cui sia stato fatto endQuiz deve essere ristampato il menu iniziale
+        if(strlen(nickname) == 0) {
+          showMainMenu(client_fd,nickname);
+        }
+        
+        if(choice == 1) {
+          chooseNickname(client_fd,nickname);
+          showQuizThemes(client_fd);
+          playGame(client_fd, nickname);
+        }
+        else if(choice == 2)
+            exitGame(client_fd);
     }
     close(client_fd);
     return 0;

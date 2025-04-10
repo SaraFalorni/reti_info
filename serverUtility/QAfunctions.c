@@ -88,6 +88,7 @@ bool check_answer(const char *theme, char* answer, int numQ) {
     
     //mette la risposta data in maiuscolo
     char *answer_up = malloc(strlen(answer)+1);
+    
     for(int i = 0; i < strlen(answer); i++)
         answer_up[i] = toupper(answer[i]);
     answer_up[strlen(answer)] = '\0';

@@ -1,7 +1,7 @@
 #include "clientUtility.h"
 
 //funzione che stampa il menù principale
-void showMainMenu(int client_fd,char* nickname) {
+int showMainMenu(int client_fd,char* nickname) {
     int choice = 0;
     printf("Trivia Quiz\n");
 
@@ -24,14 +24,7 @@ void showMainMenu(int client_fd,char* nickname) {
 
     } while(choice != 1 && choice != 2);
 
-    switch(choice) {
-        case 1:
-            chooseNickname(client_fd,nickname);
-            break;
-        case 2:
-            exitGame(client_fd);
-            break;
-    }    
+    return choice;    
 }
 
 //-------------------------------------------------------------------------------------------------------------
@@ -62,7 +55,7 @@ void chooseNickname(int client_fd,char* nickname) {
             nickname[strlen(nickname)-1] = '\0';
           
         //manda il nickname scelto al server che risponde con MSG_OK se è utilizzabile, MSG_NO altrimenti  
-        if(send(client_fd, nickname, MAXCHAR_NICKNAME, 0) == -1) {
+        if(send_all_bytes(client_fd, nickname, MAXCHAR_NICKNAME) <= 0) {
             perror("Errore in send() del nickname");
             exit(EXIT_FAILURE);
         }
@@ -96,7 +89,7 @@ void showQuizThemes(int client_fd) {
     }
      
     //messaggio di ok al server per sincronizzazione
-    if(send(client_fd, MSG_OK, MSG_LEN, 0) == -1) {
+    if(send_all_bytes(client_fd, MSG_OK, MSG_LEN) <= 0) {
         perror("Errore in send() dell'ok alla ricezione del numero di temi\n");
         exit(EXIT_FAILURE);
     }   
@@ -107,8 +100,8 @@ void showQuizThemes(int client_fd) {
     //riceve i nomi dei temi e li salva in un array di stringhe (*themes)
     for(int i = 0; i < num_themes ; i++) {
         //riceve la lunghezza della stringa
-        int len;
-        if(recv_all_bytes(client_fd,&len, sizeof(int)) <= 0) {
+        size_t len;
+        if(recv_all_bytes(client_fd,&len, sizeof(size_t)) <= 0) {
             perror("Errore nella ricezione della lunghezza della stringa");
             exit(EXIT_FAILURE);
         }
@@ -118,13 +111,13 @@ void showQuizThemes(int client_fd) {
             themes[i] = "0";
         }
         else {
-            char* buf = malloc(len);//stringa (nome tema)
+            char* buf = safe_malloc(len);//stringa (nome tema)
             if(recv_all_bytes(client_fd,buf,len) <= 0) {
                 perror("Errore nella ricezione della stringa");
                 exit(EXIT_FAILURE);
             }
           
-            themes[i] = malloc(len);
+            themes[i] = safe_malloc(len);
             strncpy(themes[i], buf, len);//copia il nome del tema nell'array
             free(buf);//libera la memoria
         }
@@ -180,7 +173,7 @@ void showQuizThemes(int client_fd) {
     choice = choice - 1;
     
     //manda la scelta fatta al server
-    if(send(client_fd, &choice, sizeof(int), 0) == -1) {
+    if(send_all_bytes(client_fd, &choice, sizeof(int)) <= 0) {
         perror("Errore in send() del tema scelto");
         exit(EXIT_FAILURE);
     }
@@ -200,13 +193,13 @@ void playGame(int client_fd,char* nickname) {
     //per ogni domanda
     for(int i = 0; i < NUM_Q ; i++) {
         //riceve la lunghezza della domanda
-        int len;
-        if(recv_all_bytes(client_fd,&len, sizeof(int)) <= 0) {
+        size_t len;
+        if(recv_all_bytes(client_fd,&len, sizeof(size_t)) <= 0) {
             perror("Errore nella ricezione della lunghezza della domanda");
             exit(EXIT_FAILURE);
         }
         //riceve la stringa della domanda
-        char* buf = malloc(len);
+        char* buf = safe_malloc(len);
         if(recv_all_bytes(client_fd,buf,len) <= 0) {
             perror("Errore nella ricezione della domanda");
             exit(EXIT_FAILURE);
@@ -255,12 +248,12 @@ void playGame(int client_fd,char* nickname) {
 void send_answer(int client_fd,char* risp) {
   //manda la lunghezza della risposta al server
     int lenR = strlen(risp)+1;
-    if(send(client_fd, &lenR, sizeof(int),0)== -1) { //invio lunghezza della risposta
+    if(send_all_bytes(client_fd, &lenR, sizeof(lenR)) <= 0) { //invio lunghezza della risposta
         perror("Errore in send() della lunghezza della risposta");
         exit(EXIT_FAILURE);
     } 
     //manda la stinga
-    if(send(client_fd,risp,lenR,0)== -1) { 
+    if(send_all_bytes(client_fd,risp,lenR) <= 0) { 
         perror("Errore in send() della domanda");
         exit(EXIT_FAILURE);
     }
@@ -289,7 +282,7 @@ bool checkComand(int client_fd,char* risp,char* nickname) {
     //manda MSG_RK al server se il client ha richiesto show score
     //esegue la funzione showScore
     if(strcmp(SHOWSCORE,risp) == 0) {
-        if(send(client_fd,MSG_RK,MSG_LEN,0)== -1) { 
+        if(send_all_bytes(client_fd,MSG_RK,MSG_LEN) <= 0) { 
             perror("Errore in send() del show score");
             exit(EXIT_FAILURE);
         }
@@ -299,18 +292,17 @@ bool checkComand(int client_fd,char* risp,char* nickname) {
     //manda MSG_EX al server se il client ha richiesto endquiz
     //esegue la funzione endGame
     else if(strcmp(ENDQUIZ,risp) == 0) {
-        if(send(client_fd,MSG_EX,MSG_LEN,0)== -1) { 
+        if(send_all_bytes(client_fd,MSG_EX,MSG_LEN) <= 0) { 
             perror("Errore in send() del endquiz");
             exit(EXIT_FAILURE);
         }
-        printf("in checkComand nickname %s\n",nickname);
         endGame(client_fd,nickname);
         return false;
     }
     //manda MSG_OK al server se il client ha risposto alla domanda
     //esegue la funzione send_answer
     else {
-        if(send(client_fd,MSG_OK,MSG_LEN,0)== -1) { 
+        if(send_all_bytes(client_fd,MSG_OK,MSG_LEN) <= 0) { 
             perror("Errore in send() del normale continuo di gioco");
             exit(EXIT_FAILURE);
         }
@@ -343,13 +335,13 @@ void showScore(int client_fd) {
       //per ogni giocatore in classifica stampa nickname e punti
       for(int k = 0; k < num_ranked ; k++) {
           //riceve la lunghezza del nickname
-          int len;
-          if(recv_all_bytes(client_fd,&len, sizeof(int)) <= 0) {
+          size_t len;
+          if(recv_all_bytes(client_fd,&len, sizeof(size_t)) <= 0) {
               perror("Errore nella ricezione della lunghezza del nickname (ranking)");
               exit(EXIT_FAILURE);
           }
           //riceve il nickname
-          char* nickname = malloc(len);
+          char* nickname = safe_malloc(len);
           if(recv_all_bytes(client_fd,nickname,len) <= 0) {
               perror("Errore nella ricezione del nickname (ranking)");
               exit(EXIT_FAILURE);
@@ -375,12 +367,12 @@ void endGame(int client_fd,char* nickname) {
     int len = strlen(nickname)+1;
     //manda al server il nickname per permettere al server di cancellare il corrispondente Player 
     
-    if(send(client_fd, &len, sizeof(int),0)== -1) { //invio lunghezza del nickname
+    if(send_all_bytes(client_fd, &len, sizeof(int)) <= 0) { //invio lunghezza del nickname
         perror("Errore in send() della lunghezza del nickname (endGame)");
         exit(EXIT_FAILURE);
     } 
     
-    if(send(client_fd, nickname, len, 0) == -1) {
+    if(send_all_bytes(client_fd, nickname, len) <= 0) {
         perror("Errore in send() del nickname");
         exit(EXIT_FAILURE);
     }
@@ -401,18 +393,49 @@ void exitGame(int client_fd) {
 //-------------------------------------------------------------------------------------------------------------
 
 //funzione che garantisce la lettura del numero corretto di bytes dal socket
-int recv_all_bytes(int socket, void *buf, int len) {
+//e gestisce l'uscita nel caso di disconnessione del server
+int recv_all_bytes(int client_fd, void *buf, int len) {
   int tot_rec = 0;
   int bytes_rec = 0;
   
   while(tot_rec < len) {
-    bytes_rec = recv(socket,buf+tot_rec,len - tot_rec,0);
-    if(bytes_rec <= 0)
-      return -1;
+    bytes_rec = recv(client_fd,buf+tot_rec,len - tot_rec,0);
+    if(bytes_rec <= 0) {
+        //gestione errore
+        printf("Connessione interrotta dal server.\n");
+        close(client_fd);
+        exit(EXIT_FAILURE);
+    }
     tot_rec += bytes_rec;
   }
   
   return tot_rec;
+}
+
+//-------------------------------------------------------------------------------------------------------------
+
+//funzione che garantisce di mandare il numero corretto di bytes dal socket
+//e gestisce l'uscita nel caso di disconnessione del server
+int send_all_bytes(int client_fd, void *buf, int len) {
+  int tot_sent = 0;
+  int bytes_sent = 0;
+  
+  while(tot_sent < len) {
+    bytes_sent = send(client_fd,buf+tot_sent,len - tot_sent,0);
+    if(bytes_sent <= 0) {
+        //gestione errore
+        if(errno == 0) 
+            printf("Connessione interrotta dal server.\n");
+        else
+            perror("errore nella send");
+      
+        close(client_fd);
+        exit(EXIT_FAILURE);
+    }
+    tot_sent += bytes_sent;
+  }
+  
+  return tot_sent;
 }
 
 //-------------------------------------------------------------------------------------------------------------
@@ -429,4 +452,17 @@ void remove_spaces(char* str) {
     fine--;
     
   *(fine + 1) = '\0';
+}
+
+//-------------------------------------------------------------------------------------------------------------
+//gestisce possibile errori in malloc
+void* safe_malloc(size_t len) {
+  void *p = malloc(len);
+  
+  if(p == NULL) {
+      perror("Errore nel malloc");
+      exit(EXIT_FAILURE);
+  }
+  
+  return p;
 }

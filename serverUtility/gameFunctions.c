@@ -13,15 +13,17 @@ void get_nickname(int client_fd, char* name) {
     while(1) {
         //riceve il nickname dal client
         if(recv_all_bytes(client_fd, nickname, MAXCHAR_NICKNAME) == -1) {
-            perror("Errore in recv() per nickname");
-            exit(EXIT_FAILURE);
+            printf("Disconnessione del client o errore.\n");
+            close(client_fd);
+            pthread_exit(NULL);
         }
         //se l'inserimento va a buon fine manda un messaggio di conferma al client, altrimenti manda un messaggio di errore e chiede nuovamente un nickname
-        if(insert_player(nickname)) {   
+        if(insert_player(nickname,client_fd)) {   
             //messaggio di ok a client
             if(send(client_fd, MSG_OK, MSG_LEN, 0) == -1) {
                 perror("Errore in send() dell'ok al nickname");
-                exit(EXIT_FAILURE);
+                close(client_fd);
+                pthread_exit(NULL);
             }    
             break;//esce dal while solo dopo un inserimento avvenuto con successo
         }
@@ -29,7 +31,8 @@ void get_nickname(int client_fd, char* name) {
           //messaggio non ok al client
           if(send(client_fd, MSG_NO, MSG_LEN, 0) == -1) {
                 perror("Errore in send() del no al nickname");
-                exit(EXIT_FAILURE);
+                close(client_fd);
+                pthread_exit(NULL);
             } 
         }
    }
@@ -48,12 +51,16 @@ void send_themes(int client_fd, char* nickname) {
     //manda il numero dei temi al client
     if(send(client_fd, &current_session.num_themes, sizeof(current_session.num_themes), 0) == -1) {
         perror("Errore in send() del numero di temi");
-        exit(EXIT_FAILURE);
+        close(client_fd);
+        delete_player(nickname);
+        pthread_exit(NULL);
     }
     
     if(recv_all_bytes(client_fd, msg, MSG_LEN) == -1) {
-        perror("Errore in recv() di conferma del numero di temi");
-        exit(EXIT_FAILURE);
+        printf("Disconnessione del client o errore.\n");
+        delete_player(nickname);
+        close(client_fd);
+        pthread_exit(NULL);
     }
 
     //se il numero dei temi è stato ricevuto correttamente prosegue mandando il nome di ogni tema, uno per volta
@@ -77,7 +84,9 @@ void send_themes(int client_fd, char* nickname) {
           
               if(send(client_fd, &len, sizeof(int),0)== -1) { //invio di -1 per indicare che non è un tema disponibile
                   perror("Errore in send() della lunghezza del nome del tema");
-                  exit(EXIT_FAILURE);
+                  close(client_fd);
+                  delete_player(nickname);
+                  pthread_exit(NULL);
               } 
           }
           //client non ha ancora giocato al quiz di quel tema
@@ -87,11 +96,15 @@ void send_themes(int client_fd, char* nickname) {
             
               if(send(client_fd, &len, sizeof(int),0)== -1) { //invio lunghezza della stringa
                   perror("Errore in send() della lunghezza del nome del tema");
-                  exit(EXIT_FAILURE);
+                  close(client_fd);
+                  delete_player(nickname);
+                  pthread_exit(NULL);
               } 
               if(send(client_fd,current_session.availableThemes[i],len,0)== -1) { //invio della stringa (nome dell'i-esimo tema)
                   perror("Errore in send() del nome del tema");
-                  exit(EXIT_FAILURE);
+                  close(client_fd);
+                  delete_player(nickname);
+                  pthread_exit(NULL);
               }
           }
      } 
@@ -100,8 +113,10 @@ void send_themes(int client_fd, char* nickname) {
   //riceve dal client l'indice del tema a cui vuole giocare
   int themeChosen;
   if(recv_all_bytes(client_fd,&themeChosen,sizeof(int)) <= 0) {
-      perror("Errore nella ricezione della stringa");
-      exit(EXIT_FAILURE);
+      printf("Disconnessione del client o errore.\n");
+      delete_player(nickname);
+      close(client_fd);
+      pthread_exit(NULL);
   }
   
   //chiamata alla funzione che implementa lo scambio domande risposte
@@ -128,19 +143,25 @@ void playquiz(int themeChosen, char* nickname, int client_fd) {
         //invia al client la lunghezza della stringa e poi la stringa contenente la i-esima domanda
         if(send(client_fd, &lenQ, sizeof(int),0)== -1) { //invio lunghezza della domanda
             perror("Errore in send() della lunghezza della domanda");
-            exit(EXIT_FAILURE);
+            close(client_fd);
+            delete_player(nickname);
+            pthread_exit(NULL);
         } 
         if(send(client_fd,bufQ,lenQ,0)== -1) { //invio della stringa (domanda)
             perror("Errore in send() della domanda");
-            exit(EXIT_FAILURE);
+            close(client_fd);
+            delete_player(nickname);
+            pthread_exit(NULL);
         }
         
         //il messaggio che riceve è per indicare se il client ha normalmente risposto o richiesto schowscore o endquiz
         //per valutarlo sfrutta la funzione check_comand
         char msg[MSG_LEN];
         if(recv_all_bytes(client_fd,msg,MSG_LEN) <= 0) {
-            perror("Errore nella ricezione della lunghezza della risposta");
-            exit(EXIT_FAILURE);
+            printf("Disconnessione del client o errore.\n");
+            delete_player(nickname);
+            close(client_fd);
+            pthread_exit(NULL);
         }
         //se check_comand torna true vuol dire che è stata fatta una show score invece di rispondere
         //quindi va ripetuta la domanda precedente, per farlo decremento i
@@ -152,16 +173,28 @@ void playquiz(int themeChosen, char* nickname, int client_fd) {
         //RICEZIONE DELLA RISPOSTA E VALUTAZIONE DI ESSA  
         
         //riceve la risposta (sempre ricevendo prima il numero di byte)
-        int lenR;
-        if(recv_all_bytes(client_fd,&lenR, sizeof(int)) <= 0) {
-            perror("Errore nella ricezione della lunghezza della risposta");
-            exit(EXIT_FAILURE);
+        size_t lenR;
+        if(recv_all_bytes(client_fd,&lenR, sizeof(size_t)) <= 0) {
+            printf("Disconnessione del client o errore.\n");
+            delete_player(nickname);
+            close(client_fd);
+            pthread_exit(NULL);
         }
         
         char* bufR = malloc(lenR); //dove è memorizzata la risposta
+        if(bufR == NULL) {
+            //errore nel malloc chiude il thread
+            perror("errore nel malloc");
+            delete_player(nickname);
+            close(client_fd);
+            pthread_exit(NULL);
+        }
+        
         if(recv_all_bytes(client_fd,bufR,lenR) <= 0) {
-            perror("Errore nella ricezione della risposta");
-            exit(EXIT_FAILURE);
+            printf("Disconnessione del client o errore.\n");
+            delete_player(nickname);
+            close(client_fd);
+            pthread_exit(NULL);
         }
         
         //calcolo punteggio
@@ -173,14 +206,18 @@ void playquiz(int themeChosen, char* nickname, int client_fd) {
             //messaggio corretta al client
             if(send(client_fd, MSG_OK, MSG_LEN, 0) == -1) {
                 perror("Errore in send() del risposta corretta");
-                exit(EXIT_FAILURE);
+                close(client_fd);
+                delete_player(nickname);
+                pthread_exit(NULL);
             }    
         }
         else {
             //messaggio non corretta al client
             if(send(client_fd, MSG_NO, MSG_LEN, 0) == -1) {
                 perror("Errore in send() del risposta errata");
-                exit(EXIT_FAILURE);
+                close(client_fd);
+                delete_player(nickname);
+                pthread_exit(NULL);
             } 
         }  
         
@@ -260,10 +297,11 @@ void do_show_score(int client_fd) {
     //manda il numero di temi
     if(send(client_fd,&current_session.num_themes,sizeof(int),0)== -1) { 
         perror("Errore in send() del numero di classifiche");
-        exit(EXIT_FAILURE);
+        close(client_fd);
+        pthread_exit(NULL);
     }
 
-    struct Player** rankings = get_theme_rankings();//calcola le classifiche
+    struct Player** rankings = get_theme_rankings(client_fd);//calcola le classifiche
     struct Player* current_player;
     
     int num_ranked;//intero che contiene il numero di giocatori in una determinata classifica
@@ -274,7 +312,8 @@ void do_show_score(int client_fd) {
         num_ranked = count_ranked(rankings,i);
         if(send(client_fd,&num_ranked,sizeof(int),0) == -1) { 
             perror("Errore in send() del numero di giocatori nella classifica");
-            exit(EXIT_FAILURE);
+            close(client_fd);
+            pthread_exit(NULL);
         }
         //per ogni giocatore nella classifica invia nickanme e punti
         while(current_player != NULL) {
@@ -282,17 +321,20 @@ void do_show_score(int client_fd) {
             int len = strlen(current_player->nickname);
             if(send(client_fd, &len, sizeof(int),0)== -1) { 
                 perror("Errore in send() della lunghezza del nickname (ranking)");
-                exit(EXIT_FAILURE);
+                close(client_fd);
+                pthread_exit(NULL);
             } 
             //invio nickname del k-esimo classificato dell'i-esimo tema
             if(send(client_fd,current_player->nickname,len,0)== -1) { 
                 perror("Errore in send() del nickname (ranking)");
-                exit(EXIT_FAILURE);
+                close(client_fd);
+                pthread_exit(NULL);
             }
             //invio del punteggio del giocatore
             if(send(client_fd,&current_player->themePoints[0],sizeof(int),0) == -1) { 
                 perror("Errore in send() del punteggio (ranking)");
-                exit(EXIT_FAILURE);
+                close(client_fd);
+                pthread_exit(NULL);
             } 
             current_player = current_player->next;
         }   
@@ -304,26 +346,29 @@ void do_show_score(int client_fd) {
 //funzione che gestisce il comando endquiz chiamato dal client
 void do_endquiz(int client_fd) {
     //riceve dal client il nickname per poter cancellare le relative informazioni
-    int len;//lunghezza del nickname
-    if(recv_all_bytes(client_fd,&len, sizeof(int)) <= 0) {
-        perror("Errore nella ricezione della lunghezza del nickname (endquiz)");
-        exit(EXIT_FAILURE);
+    size_t len;//lunghezza del nickname
+    if(recv_all_bytes(client_fd,&len, sizeof(size_t)) <= 0) {
+        printf("Disconnessione del client o errore.\n");
+        close(client_fd);
+        pthread_exit(NULL);
     }
     
     char* nickname = malloc(len);
-    if(recv_all_bytes(client_fd,nickname,len) <= 0) {
-        perror("Errore nella ricezione del nickname (endquiz)");
-        exit(EXIT_FAILURE);
+    if(nickname == NULL) {
+        //errore nel malloc chiude il thread
+        perror("errore nel malloc");
+        close(client_fd);
+        pthread_exit(NULL);
     }
     
-    printf("n endquiz nickname %s %d\n",nickname,len);//cancellare
-    
-    printf("entra nella do_enquiz prima di delete_player\n");//cancellare
-    
+    if(recv_all_bytes(client_fd,nickname,len) <= 0) {
+        printf("Disconnessione del client o errore.\n");
+        close(client_fd);
+        pthread_exit(NULL);
+    }
     //deve eliminare il player da current_session
     delete_player(nickname);
-    
-    printf("entra nella do_enquiz dopo di delete_player\n");//cancellare
+
     show_overview();//da cancellare
     
     //libera la memoria
@@ -335,12 +380,12 @@ void do_endquiz(int client_fd) {
 
 //-------------------------------------------------------------------------------------------------------------
 //funzione che garantisce la lettura del numero corretto di bytes dal socket
-int recv_all_bytes(int socket, void *buf, int len) {
+int recv_all_bytes(int client_fd, void *buf, int len) {
   int tot_rec = 0;
   int bytes_rec = 0;
   
   while(tot_rec < len) {
-    bytes_rec = recv(socket,buf+tot_rec,len - tot_rec,0);
+    bytes_rec = recv(client_fd,buf+tot_rec,len - tot_rec,0);
     if(bytes_rec <= 0)
       return -1;
     tot_rec += bytes_rec;

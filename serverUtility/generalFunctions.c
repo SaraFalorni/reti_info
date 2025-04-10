@@ -19,6 +19,11 @@ void init_session() {
     current_session.num_themes = quanti_temi();
     
     current_session.availableThemes = (char**)malloc(current_session.num_themes * sizeof(char*));
+    if(current_session.availableThemes == NULL) {
+        //errore nel malloc 
+        perror("errore nel malloc");
+        exit(EXIT_FAILURE);
+    }
     
     for(int i = 0; i < current_session.num_themes; i++) {
         char buf[MAXCHAR_LINE];
@@ -26,6 +31,11 @@ void init_session() {
         //copia il nome dei temi nella corrispondente struttura dati 
         size_t len_themeName = strlen(buf)+1;
         current_session.availableThemes[i] = malloc(len_themeName);
+        if(current_session.availableThemes[i] == NULL) {
+            //errore nel malloc
+            perror("errore nel malloc");
+            exit(EXIT_FAILURE);
+        }
         memcpy(current_session.availableThemes[i],buf,len_themeName);
     }
     
@@ -70,7 +80,7 @@ void* client_handler(void* arg) {
     get_nickname(client_fd,nickname);
     
     //quando un client si collega stampa le classifiche e chi ha completato i quiz 
-    struct Player** rankings = get_theme_rankings();
+    struct Player** rankings = get_theme_rankings(client_fd);
     print_rankings(rankings);
     print_completed_quiz(rankings);
     
@@ -80,3 +90,7 @@ void* client_handler(void* arg) {
     }
     close(client_fd);
 }
+
+//-------------------------------------------------------------------------------------------------------------
+
+
