@@ -231,11 +231,14 @@ void playGame(int client_fd,char* nickname) {
         
         remove_spaces(risp); //elimina eventuali spazi iniziali o finali
         
-        //se check_comand torna true vuol dire che è stata fatta una show score invece di rispondere, quindi va ripetuta la domanda precedente
-        if(checkComand(client_fd,risp,nickname)) {
+        //se check_comand torna 1 vuol dire che è stata fatta una show score invece di rispondere, quindi va ripetuta la domanda precedente
+        int com = checkComand(client_fd,risp,nickname);
+        if(com == 1) {
             i--;
             continue;
-        }
+        }//se torna 2 vuol dire che è stata fatta endquiz, deve uscire dal flusso
+        else if(com == 2)
+          return;
 
     }//chiude for
     printf("fine quiz in nickname %s\n",nickname);//cancellare ?
@@ -278,7 +281,7 @@ void send_answer(int client_fd,char* risp) {
 
 //ogni volta che il client sta partecipando ad un quiz può richiedere i comandi showscore o endquiz
 //questa funzione gestisce questa possibilità
-bool checkComand(int client_fd,char* risp,char* nickname) {
+int checkComand(int client_fd,char* risp,char* nickname) {
     //manda MSG_RK al server se il client ha richiesto show score
     //esegue la funzione showScore
     if(strcmp(SHOWSCORE,risp) == 0) {
@@ -287,7 +290,7 @@ bool checkComand(int client_fd,char* risp,char* nickname) {
             exit(EXIT_FAILURE);
         }
         showScore(client_fd);
-        return true;
+        return 1;
     }
     //manda MSG_EX al server se il client ha richiesto endquiz
     //esegue la funzione endGame
@@ -297,7 +300,7 @@ bool checkComand(int client_fd,char* risp,char* nickname) {
             exit(EXIT_FAILURE);
         }
         endGame(client_fd,nickname);
-        return false;
+        return 2;
     }
     //manda MSG_OK al server se il client ha risposto alla domanda
     //esegue la funzione send_answer
@@ -307,7 +310,7 @@ bool checkComand(int client_fd,char* risp,char* nickname) {
             exit(EXIT_FAILURE);
         }
         send_answer(client_fd,risp);
-        return false;
+        return 0;
     }
 }
 
@@ -379,7 +382,7 @@ void endGame(int client_fd,char* nickname) {
     strcpy(nickname, "");
     
     //torna al main menu
-    showMainMenu(client_fd,nickname);
+   
 }
 
 //-------------------------------------------------------------------------------------------------------------

@@ -373,9 +373,7 @@ void do_endquiz(int client_fd) {
     
     //libera la memoria
     free(nickname);
-    //chiude la comunicazione con il client
-    close(client_fd);
-    pthread_exit(NULL);    
+      
 }
 
 //-------------------------------------------------------------------------------------------------------------

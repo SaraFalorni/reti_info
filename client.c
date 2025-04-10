@@ -46,8 +46,11 @@ int main(int argc, char *argv[]) {
         
         if(choice == 1) {
           chooseNickname(client_fd,nickname);
-          showQuizThemes(client_fd);
-          playGame(client_fd, nickname);
+          while(strlen(nickname) > 0)
+          {
+            showQuizThemes(client_fd);
+            playGame(client_fd, nickname);
+          }
           //nel caso in cui sia stato fatto endQuiz deve essere ristampato il menu iniziale
           //il nickname deve essere svuotato
           strcpy(nickname,"");

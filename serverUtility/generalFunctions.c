@@ -77,18 +77,23 @@ void* client_handler(void* arg) {
       
     //il primo msg che riceve è il nickname
     char nickname[MAXCHAR_NICKNAME];
-    get_nickname(client_fd,nickname);
-    
-    //quando un client si collega stampa le classifiche e chi ha completato i quiz 
-    struct Player** rankings = get_theme_rankings(client_fd);
-    print_rankings(rankings);
-    print_completed_quiz(rankings);
     
     while(1) {
-        //una volta registrato il nuovo giocatore invia i temi disponibili
-        send_themes(client_fd, nickname);
+        get_nickname(client_fd,nickname);
+      
+        //quando un client si collega stampa le classifiche e chi ha completato i quiz 
+        struct Player** rankings = get_theme_rankings(client_fd);
+        print_rankings(rankings);
+        print_completed_quiz(rankings);
+    
+        while(get_player(current_session.players,nickname) != NULL) {
+          //una volta registrato il nuovo giocatore invia i temi disponibili
+          send_themes(client_fd, nickname);
+        }
     }
+    
     close(client_fd);
+    return NULL;
 }
 
 //-------------------------------------------------------------------------------------------------------------
