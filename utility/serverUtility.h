@@ -1,9 +1,9 @@
 #include "utility.h"
-#include "serverUtility.h"
-#include "generalFunctions.h"
-#include "PlayersFunctions.h"
-#include "rankingsFunctions.h"
-#include "gameFunctions.h"
+#include "../serverUtility/serverUtility.h"
+#include "../serverUtility/generalFunctions.h"
+#include "../serverUtility/PlayersFunctions.h"
+#include "../serverUtility/rankingsFunctions.h"
+#include "../serverUtility/gameFunctions.h"
 
 #define SERVER_IP "127.0.0.1"
 
