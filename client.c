@@ -30,9 +30,15 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
     
-    char nickname[MAXCHAR_NICKNAME];
+    char nickname[MAXCHAR_NICKNAME] = "";
+    //menu mostrato all'inizio del gioco
     showMainMenu(client_fd,nickname);
+    
     while(1) {
+    //nel caso in cui sia stato fatto endQuiz deve essere ristampato il menu iniziale
+    if(strlen(nickname) == 0) {
+      showMainMenu(client_fd,nickname);
+    }
       showQuizThemes(client_fd);
       playGame(client_fd, nickname);
     }

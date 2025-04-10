@@ -23,28 +23,5 @@
 
 typedef enum {false, true} bool;
 
-struct Player {
-    char* nickname;
-    int* themePoints;//ogni tema è identificato dall'indice nell'array current_session.availableThemes
-    struct Player* next;
-    bool* themeCompleted; //true se i-esimo quiz è stato completato
-};
-
-struct Session {
-  struct Player* players;
-  int num_players;
-  char** availableThemes;
-  int num_themes;
-};
-
-void read_line(const char* filename,char* buf, int line);
-void read_q(const char* filename,char* buf, int numQ);
-bool check_nickname(char* nickname);
-bool check_answer(const char *theme, char* answer, int numQ);
-void get_answ_from_line(char *buf);
 void remove_spaces(char* str);
-void get_theme_name(int num, char* buf);//ritorna il numero di temi disponibili
-int quanti_temi();
-int recv_all_bytes(int socket, void *buf, int len);
-void get_filename_from_index(char* bufFile, int themeChosen,struct Session* current_session);
 void print_session(struct Session* current_session);
