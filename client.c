@@ -44,15 +44,13 @@ int main(int argc, char *argv[]) {
         //menu mostrato all'inizio del gioco
         int choice = showMainMenu(client_fd,nickname);//1 se vuole giocare, 2 se vuole uscire
         
-        //nel caso in cui sia stato fatto endQuiz deve essere ristampato il menu iniziale
-        if(strlen(nickname) == 0) {
-          showMainMenu(client_fd,nickname);
-        }
-        
         if(choice == 1) {
           chooseNickname(client_fd,nickname);
           showQuizThemes(client_fd);
           playGame(client_fd, nickname);
+          //nel caso in cui sia stato fatto endQuiz deve essere ristampato il menu iniziale
+          //il nickname deve essere svuotato
+          strcpy(nickname,"");
         }
         else if(choice == 2)
             exitGame(client_fd);

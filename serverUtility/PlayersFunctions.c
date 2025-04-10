@@ -38,7 +38,7 @@ bool insert_player(char* nickname, int client_fd) {
         close(client_fd);
         pthread_exit(NULL);
     }
-    size_t len_nickname = strlen(nickname)+1;
+    int len_nickname = strlen(nickname)+1;
     new_player->nickname = (char*)malloc(len_nickname);
     if(new_player->nickname == NULL) {
         //errore nel malloc chiude il thread

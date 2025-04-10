@@ -173,8 +173,8 @@ void playquiz(int themeChosen, char* nickname, int client_fd) {
         //RICEZIONE DELLA RISPOSTA E VALUTAZIONE DI ESSA  
         
         //riceve la risposta (sempre ricevendo prima il numero di byte)
-        size_t lenR;
-        if(recv_all_bytes(client_fd,&lenR, sizeof(size_t)) <= 0) {
+        int lenR;
+        if(recv_all_bytes(client_fd,&lenR, sizeof(int)) <= 0) {
             printf("Disconnessione del client o errore.\n");
             delete_player(nickname);
             close(client_fd);
@@ -346,8 +346,8 @@ void do_show_score(int client_fd) {
 //funzione che gestisce il comando endquiz chiamato dal client
 void do_endquiz(int client_fd) {
     //riceve dal client il nickname per poter cancellare le relative informazioni
-    size_t len;//lunghezza del nickname
-    if(recv_all_bytes(client_fd,&len, sizeof(size_t)) <= 0) {
+    int len;//lunghezza del nickname
+    if(recv_all_bytes(client_fd,&len, sizeof(int)) <= 0) {
         printf("Disconnessione del client o errore.\n");
         close(client_fd);
         pthread_exit(NULL);

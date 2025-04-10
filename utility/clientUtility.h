@@ -18,6 +18,6 @@ void exitGame(int client_fd);
 int recv_all_bytes(int client_fd, void *buf, int len);
 int send_all_bytes(int client_fd, void *buf, int len) ;
 void remove_spaces(char* str);
-void* safe_malloc(size_t size);
+void* safe_malloc(int size);
 
 #endif

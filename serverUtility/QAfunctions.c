@@ -62,7 +62,7 @@ void get_answ_from_line(char *buf) {
     //"=" è il separatore tra domanda e risposta in una riga del file
     char *answer = strchr(buf,'=');
 
-    size_t lenght = strlen(answer);
+    int lenght = strlen(answer);
     if(lenght > 0 && answer[lenght-1] == '\n')
       answer[lenght-1] = '\0'; //per eliminare '\n' presente nella riga del file
 

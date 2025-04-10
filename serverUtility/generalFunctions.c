@@ -29,7 +29,7 @@ void init_session() {
         char buf[MAXCHAR_LINE];
         get_theme_name(i+1,buf);
         //copia il nome dei temi nella corrispondente struttura dati 
-        size_t len_themeName = strlen(buf)+1;
+        int len_themeName = strlen(buf)+1;
         current_session.availableThemes[i] = malloc(len_themeName);
         if(current_session.availableThemes[i] == NULL) {
             //errore nel malloc

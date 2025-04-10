@@ -100,8 +100,8 @@ void showQuizThemes(int client_fd) {
     //riceve i nomi dei temi e li salva in un array di stringhe (*themes)
     for(int i = 0; i < num_themes ; i++) {
         //riceve la lunghezza della stringa
-        size_t len;
-        if(recv_all_bytes(client_fd,&len, sizeof(size_t)) <= 0) {
+        int len;
+        if(recv_all_bytes(client_fd,&len, sizeof(int)) <= 0) {
             perror("Errore nella ricezione della lunghezza della stringa");
             exit(EXIT_FAILURE);
         }
@@ -193,8 +193,8 @@ void playGame(int client_fd,char* nickname) {
     //per ogni domanda
     for(int i = 0; i < NUM_Q ; i++) {
         //riceve la lunghezza della domanda
-        size_t len;
-        if(recv_all_bytes(client_fd,&len, sizeof(size_t)) <= 0) {
+        int len;
+        if(recv_all_bytes(client_fd,&len, sizeof(int)) <= 0) {
             perror("Errore nella ricezione della lunghezza della domanda");
             exit(EXIT_FAILURE);
         }
@@ -335,8 +335,8 @@ void showScore(int client_fd) {
       //per ogni giocatore in classifica stampa nickname e punti
       for(int k = 0; k < num_ranked ; k++) {
           //riceve la lunghezza del nickname
-          size_t len;
-          if(recv_all_bytes(client_fd,&len, sizeof(size_t)) <= 0) {
+          int len;
+          if(recv_all_bytes(client_fd,&len, sizeof(int)) <= 0) {
               perror("Errore nella ricezione della lunghezza del nickname (ranking)");
               exit(EXIT_FAILURE);
           }
@@ -456,7 +456,7 @@ void remove_spaces(char* str) {
 
 //-------------------------------------------------------------------------------------------------------------
 //gestisce possibile errori in malloc
-void* safe_malloc(size_t len) {
+void* safe_malloc(int len) {
   void *p = malloc(len);
   
   if(p == NULL) {
