@@ -6,7 +6,7 @@ gcc -Wall -pthread \
 	serverUtility/gameFunctions.c \
 	serverUtility/generalFunctions.c \
 	serverUtility/PlayersFunctions.c \
-	serverUtility/QAFunctions.c \
+	serverUtility/QAfunctions.c \
 	serverUtility/rankingsFunctions.c \
 	-o server
 	

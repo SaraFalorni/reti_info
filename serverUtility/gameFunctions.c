@@ -1,5 +1,8 @@
 //FUNZIONI CHE IMPLEMENTANO IL GIOCO
 
+#include "../utility/utility.h"
+#include "../utility/serverUtility.h"
+#include "gameFunctions.h"
 //-------------------------------------------------------------------------------------------------------------
 
 //funzione che interagisce con il client per ottenere il nuovo nickname

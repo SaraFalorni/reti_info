@@ -1,5 +1,9 @@
 //FUNZIONI CHE CREANO LE CLASSIFICHE DEI GIOCATORI
 
+#include "../utility/utility.h"
+#include "../utility/serverUtility.h"
+#include "rankingsFunctions.h"
+
 //-------------------------------------------------------------------------------------------------------------
 
 //funzione che restituisce la classifica per tutti i temi come array di liste (classifiche) per tema

@@ -19,5 +19,10 @@ struct Session {
   int num_themes;
 };
 
+// mutex per players
+extern pthread_mutex_t lockPlayers;
+//nuova sessione di gioco
+extern struct Session current_session; 
+
 #endif
 

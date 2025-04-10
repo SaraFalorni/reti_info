@@ -1,3 +1,7 @@
+#include "../utility/utility.h"
+#include "../utility/serverUtility.h"
+#include "generalFunctions.h"
+
 //inizializzazione mutex per players
 pthread_mutex_t lockPlayers = PTHREAD_MUTEX_INITIALIZER;
 //inizializzazione della uova sessione di gioco

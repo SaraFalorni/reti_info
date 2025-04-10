@@ -1,6 +1,9 @@
 //FUNZIONI CHE AGISCONO SU STRUCT PLAYERS SIA DI MODIFICA CHE DI SOLA LETTURA
 
-/-------------------------------------------------------------------------------------------------------------
+#include "../utility/utility.h"
+#include "../utility/serverUtility.h"
+#include "PlayersFunctions.h"
+//-------------------------------------------------------------------------------------------------------------
 
 //funzione che ritorna il puntatore dove inserire un nuovo giocatore (in fondo alla lista p)
 //se usata su current_session.players deve essere usata in un blocco critico
