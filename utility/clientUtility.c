@@ -190,6 +190,7 @@ void showQuizThemes(int client_fd) {
 //funzione che gestisce il quiz
 //mostra a video le domande, prende le risposte comunicando con il server per ottenere le prime e verificare le seconde
 void playGame(int client_fd,char* nickname) {
+    int com = 0;
     //per ogni domanda
     for(int i = 0; i < NUM_Q ; i++) {
         //riceve la lunghezza della domanda
@@ -211,7 +212,7 @@ void playGame(int client_fd,char* nickname) {
         strcpy(risp,"0");
         
         //ripulisce stdin evitando la doppia stampa
-        if(i == 0) {
+        if(i == 0 ) {
             int c;
             while((c = getchar()) != '\n' && c != EOF);
         }
@@ -232,7 +233,7 @@ void playGame(int client_fd,char* nickname) {
         remove_spaces(risp); //elimina eventuali spazi iniziali o finali
         
         //se check_comand torna 1 vuol dire che è stata fatta una show score invece di rispondere, quindi va ripetuta la domanda precedente
-        int com = checkComand(client_fd,risp,nickname);
+        com = checkComand(client_fd,risp,nickname);
         if(com == 1) {
             i--;
             continue;
@@ -290,6 +291,7 @@ int checkComand(int client_fd,char* risp,char* nickname) {
             exit(EXIT_FAILURE);
         }
         showScore(client_fd);
+        
         return 1;
     }
     //manda MSG_EX al server se il client ha richiesto endquiz
