@@ -13,5 +13,6 @@ bool checkComand(int client_fd,char* risp,char* nickname);
 void send_answer(int client_fd,char* risp);
 void exitGame(int client_fd);
 int recv_all_bytes(int socket, void *buf, int len);
+void remove_spaces(char* str);
 
 #endif

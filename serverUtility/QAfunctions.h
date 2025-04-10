@@ -1,6 +1,13 @@
 #ifndef QAFUNCTIONS_H
 #define QAFUNCTIONS_H
 
+#include "utility.h"
+#include "../utility/serverUtility.h"
+#include "../serverUtility/generalFunctions.h"
+#include "../serverUtility/PlayersFunctions.h"
+#include "../serverUtility/rankingsFunctions.h"
+#include "../serverUtility/gameFunctions.h"
+
 void read_line(const char* filename,char* buf, int line);
 void read_q(const char* filename,char* buf, int numQ);
 void get_answ_from_line(char *buf);

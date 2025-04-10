@@ -1,3 +1,6 @@
+#ifndef UTILITY_H
+#define UTILITY_H
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -6,6 +9,7 @@
 #include <string.h>
 #include <ctype.h> //toupper()
 #include <pthread.h>
+#include <stdbool.h>
 
 #define MAXCHAR_LINE 1024
 #define MAXCHAR_NICKNAME 20
@@ -21,7 +25,4 @@
 #define NUM_Q 5 //numero di domande per ogni tema
 #define NUM_SEPARATOR 50
 
-typedef enum {false, true} bool;
-
-void remove_spaces(char* str);
-void print_session(struct Session* current_session);
+#endif

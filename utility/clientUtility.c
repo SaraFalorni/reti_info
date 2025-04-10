@@ -414,3 +414,19 @@ int recv_all_bytes(int socket, void *buf, int len) {
   
   return tot_rec;
 }
+
+//-------------------------------------------------------------------------------------------------------------
+
+void remove_spaces(char* str) {
+  //rimozione spazi iniziali
+  while(isspace((unsigned char)* str)) 
+    str++;
+    
+  char* fine = str + strlen(str) -1;
+  
+  //rimozione spazi finali
+  while(fine > str && isspace((unsigned char)* str)) 
+    fine--;
+    
+  *(fine + 1) = '\0';
+}
