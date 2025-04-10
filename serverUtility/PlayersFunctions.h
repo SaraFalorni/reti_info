@@ -1,12 +1,12 @@
 #ifndef PLAYERSFUNCTIONS_H
 #define PLAYERSFUNCTIONS_H
 
-#include "utility.h"
+#include "../utility/utility.h"
 #include "../utility/serverUtility.h"
-#include "../serverUtility/QAfunctions.h"
-#include "../serverUtility/generalFunctions.h"
-#include "../serverUtility/rankingsFunctions.h"
-#include "../serverUtility/gameFunctions.h"
+#include "QAfunctions.h"
+#include "generalFunctions.h"
+#include "rankingsFunctions.h"
+#include "gameFunctions.h"
 
 struct Player* find_last_player(struct Player* p);
 bool insert_player(char* nickname) ;

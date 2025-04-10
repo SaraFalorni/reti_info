@@ -1,12 +1,12 @@
 #ifndef QAFUNCTIONS_H
 #define QAFUNCTIONS_H
 
-#include "utility.h"
+#include "../utility/utility.h"
 #include "../utility/serverUtility.h"
-#include "../serverUtility/generalFunctions.h"
-#include "../serverUtility/PlayersFunctions.h"
-#include "../serverUtility/rankingsFunctions.h"
-#include "../serverUtility/gameFunctions.h"
+#include "generalFunctions.h"
+#include "PlayersFunctions.h"
+#include "rankingsFunctions.h"
+#include "gameFunctions.h"
 
 void read_line(const char* filename,char* buf, int line);
 void read_q(const char* filename,char* buf, int numQ);

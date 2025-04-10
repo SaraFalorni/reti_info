@@ -1,4 +1,12 @@
 #include "./utility/serverUtility.h"
+#include "./utility/utility.h"
+
+
+#include "serverUtility/QAfunctions.h"
+#include "serverUtility/rankingsFunctions.h"
+#include "serverUtility/PlayersFunctions.h"
+#include "serverUtility/gameFunctions.h"
+#include "serverUtility/generalFunctions.h"
 
 
 int main(int argc, char *argv[]) {

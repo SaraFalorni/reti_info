@@ -1,3 +1,8 @@
+//inizializzazione mutex per players
+pthread_mutex_t lockPlayers = PTHREAD_MUTEX_INITIALIZER;
+//inizializzazione della uova sessione di gioco
+struct Session current_session; 
+
 //-------------------------------------------------------------------------------------------------------------
 
 //funzione che inizializza i valori di current_session per iniziare una funzione di gioco

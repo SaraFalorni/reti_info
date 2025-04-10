@@ -1,9 +1,7 @@
+#ifndef SERVERUTILITY_H
+#define SERVERUTILITY_H
+
 #include "utility.h"
-#include "../serverUtility/QAfunctions.h"
-#include "../serverUtility/generalFunctions.h"
-#include "../serverUtility/PlayersFunctions.h"
-#include "../serverUtility/rankingsFunctions.h"
-#include "../serverUtility/gameFunctions.h"
 
 #define SERVER_IP "127.0.0.1"
 
@@ -21,7 +19,5 @@ struct Session {
   int num_themes;
 };
 
-//inizializzazione mutex per players
-pthread_mutex_t lockPlayers = PTHREAD_MUTEX_INITIALIZER;
-//inizializzazione della uova sessione di gioco
-struct Session current_session; 
+#endif
+

@@ -1,12 +1,12 @@
 #ifndef GAMEFUNCTIONS_H
 #define GAMEFUNCTIONS_H
 
-#include "utility.h"
+#include "../utility/utility.h"
 #include "../utility/serverUtility.h"
-#include "../serverUtility/QAfunctions.h"
-#include "../serverUtility/generalFunctions.h"
-#include "../serverUtility/PlayersFunctions.h"
-#include "../serverUtility/rankingsFunctions.h"
+#include "QAfunctions.h"
+#include "generalFunctions.h"
+#include "PlayersFunctions.h"
+#include "rankingsFunctions.h"
 
 void get_nickname(int client_fd, char* name);
 void send_themes(int client_fd, char* nickname) ;
