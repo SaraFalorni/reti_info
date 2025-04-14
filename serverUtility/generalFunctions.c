@@ -98,4 +98,29 @@ void* client_handler(void* arg) {
 
 //-------------------------------------------------------------------------------------------------------------
 
+//funzione che gestisce gli errori dovuti a send o improvvise disconnessioni del server
+void manageErrSend() {
+    //gestione errore
+      if(errno == 0) 
+          printf("Connessione interrotta dal server.\n");
+      else
+          perror("errore nella send");
+    
+      close(client_fd);
+      exit(EXIT_FAILURE);
+}
+
+//-------------------------------------------------------------------------------------------------------------
+
+//funzione che gestisce gli errori dovuti recv o improvvise disconnessioni del server
+void manageErrRecv() {
+    //gestione errore
+      if(errno == 0) 
+          printf("Connessione interrotta dal server.\n");
+      else
+          perror("errore nella recv");
+    
+      close(client_fd);
+      exit(EXIT_FAILURE);
+}
 

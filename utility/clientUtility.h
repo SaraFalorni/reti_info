@@ -13,11 +13,13 @@ void showQuizThemes(int client_fd);
 void playGame(int client_fd,char* nickname);
 void showScore(int client_fd);
 int checkComand(int client_fd,char* risp,char* nickname);
-void send_answer(int client_fd,char* risp);
+void sendAnswer(int client_fd,char* risp);
 void exitGame(int client_fd);
-int recv_all_bytes(int client_fd, void *buf, int len);
-int send_all_bytes(int client_fd, void *buf, int len) ;
-void remove_spaces(char* str);
-void* safe_malloc(int size);
+uint32_t recvAllBytes(int client_fd, void *buf,uint32_t len);
+uint32_t sendAllBytes(int client_fd, void *buf, uint32_t len);
+char* recvString(int client_fd, void *buf);
+int sendString(int client_fd, void *buf);
+void removeSpaces(char* str);
+void* safeMalloc(int size);
 
 #endif

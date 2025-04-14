@@ -55,13 +55,13 @@ void chooseNickname(int client_fd,char* nickname) {
             nickname[strlen(nickname)-1] = '\0';
           
         //manda il nickname scelto al server che risponde con MSG_OK se è utilizzabile, MSG_NO altrimenti  
-        if(send_all_bytes(client_fd, nickname, MAXCHAR_NICKNAME) <= 0) {
+        if(sendString(client_fd, nickname) <= 0) {
             perror("Errore in send() del nickname");
             exit(EXIT_FAILURE);
         }
         
         //ricezione risposta del server
-        if(recv(client_fd, msg, MSG_LEN, 0) == -1) { 
+        if(recvAllBytes(client_fd, msg, MSG_LEN) <= 0) { 
             perror("Errore in recv() di conferma nickname");
             exit(EXIT_FAILURE);
         }
@@ -83,13 +83,13 @@ void showQuizThemes(int client_fd) {
     //riceve il numero di temi disponibili dal server
     int num_themes;
         
-    if(recv_all_bytes(client_fd, &num_themes, sizeof(num_themes)) == -1) {
+    if(recvAllBytes(client_fd, &num_themes, sizeof(num_themes)) <= 0) {
         perror("Errore in recv() per il numero di temi disponibili");
         exit(EXIT_FAILURE);
     }
      
     //messaggio di ok al server per sincronizzazione
-    if(send_all_bytes(client_fd, MSG_OK, MSG_LEN) <= 0) {
+    if(sendAllBytes(client_fd, MSG_OK, MSG_LEN) <= 0) {
         perror("Errore in send() dell'ok alla ricezione del numero di temi\n");
         exit(EXIT_FAILURE);
     }   
@@ -99,29 +99,13 @@ void showQuizThemes(int client_fd) {
   
     //riceve i nomi dei temi e li salva in un array di stringhe (*themes)
     for(int i = 0; i < num_themes ; i++) {
-        //riceve la lunghezza della stringa
-        int len;
-        if(recv_all_bytes(client_fd,&len, sizeof(int)) <= 0) {
-            perror("Errore nella ricezione della lunghezza della stringa");
+        //riceve la stringa con il nome del i-esimo tema
+        if(recvString(client_fd,themes[i]) == NULL) {
+            perror("Errore nella ricezione del nome del tema");
             exit(EXIT_FAILURE);
         }
-        //se il server ha mandato lunghezza pari a -1 vuol dire che quel tema non è disponibile (perchè ci ha già giocato)
-        //viene contraddistinto dalla stringa "0"
-        if(len == -1) {
-            themes[i] = "0";
-        }
-        else {
-            char* buf = safe_malloc(len);//stringa (nome tema)
-            if(recv_all_bytes(client_fd,buf,len) <= 0) {
-                perror("Errore nella ricezione della stringa");
-                exit(EXIT_FAILURE);
-            }
-          
-            themes[i] = safe_malloc(len);
-            strncpy(themes[i], buf, len);//copia il nome del tema nell'array
-            free(buf);//libera la memoria
-        }
-        
+        //se il server ha mandato una stringa vuota " "
+        //vuol dire che quel tema non è disponibile (perchè ci ha già giocato)       
     }
   
     
@@ -134,7 +118,7 @@ void showQuizThemes(int client_fd) {
     int n = 0;//intero per "tradurre" l'indice dato al client con quello del server
     
     for(int i = 0; i < num_themes ; i++) {
-        if(strcmp(themes[i],"0") == 0 ) 
+        if(strcmp(themes[i]," ") == 0 ) 
            n++;//incrementato per ogni tema non disponibile
         else 
             printf("\n%d - %s", i-n+1, themes[i]);//l'indice da mostrare a video è la differenza fra l'indice vero (a cui fa riferimento il server) e il numero di temi non disponibili sommato 1
@@ -173,7 +157,7 @@ void showQuizThemes(int client_fd) {
     choice = choice - 1;
     
     //manda la scelta fatta al server
-    if(send_all_bytes(client_fd, &choice, sizeof(int)) <= 0) {
+    if(sendAllBytes(client_fd, &choice, sizeof(int)) <= 0) {
         perror("Errore in send() del tema scelto");
         exit(EXIT_FAILURE);
     }
@@ -193,15 +177,9 @@ void playGame(int client_fd,char* nickname) {
     int com = 0;
     //per ogni domanda
     for(int i = 0; i < NUM_Q ; i++) {
-        //riceve la lunghezza della domanda
-        int len;
-        if(recv_all_bytes(client_fd,&len, sizeof(int)) <= 0) {
-            perror("Errore nella ricezione della lunghezza della domanda");
-            exit(EXIT_FAILURE);
-        }
         //riceve la stringa della domanda
-        char* buf = safe_malloc(len);
-        if(recv_all_bytes(client_fd,buf,len) <= 0) {
+        char* buf;
+        if(recvString(client_fd,buf) == NULL) {
             perror("Errore nella ricezione della domanda");
             exit(EXIT_FAILURE);
         }
@@ -230,7 +208,7 @@ void playGame(int client_fd,char* nickname) {
         
         free(buf);//libera la memoria
         
-        remove_spaces(risp); //elimina eventuali spazi iniziali o finali
+        RemoveSpaces(risp); //elimina eventuali spazi iniziali o finali
         
         //se check_comand torna 1 vuol dire che è stata fatta una show score invece di rispondere, quindi va ripetuta la domanda precedente
         com = checkComand(client_fd,risp,nickname);
@@ -249,15 +227,9 @@ void playGame(int client_fd,char* nickname) {
 
 //comunica con il server per verificare la correttezza della risposta
 //nel parametro risp c'è la risposta data
-void send_answer(int client_fd,char* risp) {
-  //manda la lunghezza della risposta al server
-    int lenR = strlen(risp)+1;
-    if(send_all_bytes(client_fd, &lenR, sizeof(lenR)) <= 0) { //invio lunghezza della risposta
-        perror("Errore in send() della lunghezza della risposta");
-        exit(EXIT_FAILURE);
-    } 
-    //manda la stinga
-    if(send_all_bytes(client_fd,risp,lenR) <= 0) { 
+void sendAnswer(int client_fd,char* risp) {
+    //manda la stringa
+    if(sendString(client_fd,risp) <= 0) { 
         perror("Errore in send() della domanda");
         exit(EXIT_FAILURE);
     }
@@ -266,7 +238,7 @@ void send_answer(int client_fd,char* risp) {
     //stampa a video di conseguenza
     char msg[MSG_LEN];
     
-    if(recv_all_bytes(client_fd,msg,MSG_LEN) <= 0) {
+    if(recvAllBytes(client_fd,msg,MSG_LEN) <= 0) {
         perror("Errore in recv() del feedback sulla risposta");
         exit(EXIT_FAILURE);
     }
@@ -286,7 +258,7 @@ int checkComand(int client_fd,char* risp,char* nickname) {
     //manda MSG_RK al server se il client ha richiesto show score
     //esegue la funzione showScore
     if(strcmp(SHOWSCORE,risp) == 0) {
-        if(send_all_bytes(client_fd,MSG_RK,MSG_LEN) <= 0) { 
+        if(sendAllBytes(client_fd,MSG_RK,MSG_LEN) <= 0) { 
             perror("Errore in send() del show score");
             exit(EXIT_FAILURE);
         }
@@ -297,7 +269,7 @@ int checkComand(int client_fd,char* risp,char* nickname) {
     //manda MSG_EX al server se il client ha richiesto endquiz
     //esegue la funzione endGame
     else if(strcmp(ENDQUIZ,risp) == 0) {
-        if(send_all_bytes(client_fd,MSG_EX,MSG_LEN) <= 0) { 
+        if(sendAllBytes(client_fd,MSG_EX,MSG_LEN) <= 0) { 
             perror("Errore in send() del endquiz");
             exit(EXIT_FAILURE);
         }
@@ -305,13 +277,13 @@ int checkComand(int client_fd,char* risp,char* nickname) {
         return 2;
     }
     //manda MSG_OK al server se il client ha risposto alla domanda
-    //esegue la funzione send_answer
+    //esegue la funzione sendAnswer
     else {
-        if(send_all_bytes(client_fd,MSG_OK,MSG_LEN) <= 0) { 
+        if(sendAllBytes(client_fd,MSG_OK,MSG_LEN) <= 0) { 
             perror("Errore in send() del normale continuo di gioco");
             exit(EXIT_FAILURE);
         }
-        send_answer(client_fd,risp);
+        sendAnswer(client_fd,risp);
         return 0;
     }
 }
@@ -322,7 +294,7 @@ int checkComand(int client_fd,char* risp,char* nickname) {
 void showScore(int client_fd) { 
    //riceve il numero di temi, quindi il numero di classifiche massimo da stampare
    int num_themes;
-   if(recv_all_bytes(client_fd,&num_themes, sizeof(int)) <= 0) {
+   if(recvAllBytes(client_fd,&num_themes, sizeof(int)) <= 0) {
         perror("Errore nella ricezione del numero di temi (ranking)");
         exit(EXIT_FAILURE);
    }  
@@ -330,7 +302,7 @@ void showScore(int client_fd) {
    for(int i = 0; i < num_themes; i++) {
      //riceve il numero di giocatori nella i-esima classifica
       int num_ranked;
-      if(recv_all_bytes(client_fd,&num_ranked, sizeof(int)) <= 0) {
+      if(recvAllBytes(client_fd,&num_ranked, sizeof(int)) <= 0) {
             perror("Errore nella ricezione del numero di giocatori in classifica");
             exit(EXIT_FAILURE);
       } 
@@ -339,21 +311,15 @@ void showScore(int client_fd) {
           printf("\nPunteggio tema %d\n",i+1);
       //per ogni giocatore in classifica stampa nickname e punti
       for(int k = 0; k < num_ranked ; k++) {
-          //riceve la lunghezza del nickname
-          int len;
-          if(recv_all_bytes(client_fd,&len, sizeof(int)) <= 0) {
-              perror("Errore nella ricezione della lunghezza del nickname (ranking)");
-              exit(EXIT_FAILURE);
-          }
           //riceve il nickname
-          char* nickname = safe_malloc(len);
-          if(recv_all_bytes(client_fd,nickname,len) <= 0) {
+          char* nickname;
+          if(recvString(client_fd,nickname) == NULL) {
               perror("Errore nella ricezione del nickname (ranking)");
               exit(EXIT_FAILURE);
           }
           //riceve il punteggio del k-esimo classificato dell'i-esimo tema
           int points;
-          if(recv_all_bytes(client_fd,&points, sizeof(int)) <= 0) {
+          if(recvAllBytes(client_fd,&points, sizeof(int)) <= 0) {
               perror("Errore nella ricezione del punteggio (ranking)");
               exit(EXIT_FAILURE);
           }
@@ -371,13 +337,7 @@ void showScore(int client_fd) {
 void endGame(int client_fd,char* nickname) {
     int len = strlen(nickname)+1;
     //manda al server il nickname per permettere al server di cancellare il corrispondente Player 
-    
-    if(send_all_bytes(client_fd, &len, sizeof(int)) <= 0) { //invio lunghezza del nickname
-        perror("Errore in send() della lunghezza del nickname (endGame)");
-        exit(EXIT_FAILURE);
-    } 
-    
-    if(send_all_bytes(client_fd, nickname, len) <= 0) {
+    if(sendString(client_fd, nickname) <= 0) {
         perror("Errore in send() del nickname");
         exit(EXIT_FAILURE);
     }
@@ -399,53 +359,81 @@ void exitGame(int client_fd) {
 
 //funzione che garantisce la lettura del numero corretto di bytes dal socket
 //e gestisce l'uscita nel caso di disconnessione del server
-int recv_all_bytes(int client_fd, void *buf, int len) {
-  int tot_rec = 0;
-  int bytes_rec = 0;
+int recvAllBytes(int client_fd, void *buf,uint32_t len) {
+  uint32_t totRec = 0;
+  uint32_t bytesRec = 0;
   
-  while(tot_rec < len) {
-    bytes_rec = recv(client_fd,buf+tot_rec,len - tot_rec,0);
-    if(bytes_rec <= 0) {
-        //gestione errore
-        printf("Connessione interrotta dal server.\n");
-        close(client_fd);
-        exit(EXIT_FAILURE);
+  while(totRec < len) {
+    bytesRec = recv(client_fd,buf+totRec,len-totRec,0);
+    if(bytesRec <= 0) {
+        manageErrRecv();
     }
-    tot_rec += bytes_rec;
+    totRec += bytesRec;
   }
   
-  return tot_rec;
+  return totRec;
 }
 
 //-------------------------------------------------------------------------------------------------------------
 
-//funzione che garantisce di mandare il numero corretto di bytes dal socket
+//funzione che garantisce di mandare il numero corretto di bytes dal
 //e gestisce l'uscita nel caso di disconnessione del server
-int send_all_bytes(int client_fd, void *buf, int len) {
-  int tot_sent = 0;
-  int bytes_sent = 0;
-  
-  while(tot_sent < len) {
-    bytes_sent = send(client_fd,buf+tot_sent,len - tot_sent,0);
-    if(bytes_sent <= 0) {
-        //gestione errore
-        if(errno == 0) 
-            printf("Connessione interrotta dal server.\n");
-        else
-            perror("errore nella send");
-      
-        close(client_fd);
-        exit(EXIT_FAILURE);
+
+  uint32_t sendAllBytes(int client_fd, void *buf, uint32_t len) {
+    uint32_t totSent = 0;
+    uint32_t bytesSent = 0;
+    
+    while(totSent < len) {
+      bytesSent = send(client_fd,buf+totSent,len-totSent,0);
+      if(bytesSent <= 0) {
+          //gestione errore
+          manageErrSend();// in generalFunctions
+      }
+      totSent += bytesSent;
     }
-    tot_sent += bytes_sent;
+    
+    return totSent;
   }
+
+//-------------------------------------------------------------------------------------------------------------
+
+//funzione che gestisce la ricezione di una stringa
+//ricevendo prima la lunghezza e successivamente la stringa stessa
+//ritorna il puntatore alla stringa
+char* recvString(int client_fd, void *buf) {
+  //riceve prima la lunghezza della stringa
+  uint32_t netLen;
   
-  return tot_sent;
+  recvAllBytes(client_fd,&netLen,sizeof(netLen));
+  
+  uint32_t len = ntohl(netLen); //da network a host
+  
+  buf = safeMalloc(len);
+  
+  recvAllBytes(client_fd,buf,len);//riceve la stringa
+  
+  return buf;
 }
 
 //-------------------------------------------------------------------------------------------------------------
 
-void remove_spaces(char* str) {
+//funzione che gestisce l'invio di una stringa, mandando prima la lunghezza e successivamente la stringa stessa
+int sendString(int client_fd, void *buf) {
+  //lunghezza della stringa
+  uint32_t len = (uint32_t)strlen(buf);
+  uint32_t netLen = htonl(len); //host to network
+  
+  sendAllBytes(client_fd,&netLen,sizeof(netLen));
+  
+  //manda la stringa
+  int bytesSent = sendAllBytes(client_fd,buf,len);
+  
+  return bytesSent;
+}
+
+//-------------------------------------------------------------------------------------------------------------
+
+void RemoveSpaces(char* str) {
   //rimozione spazi iniziali
   while(isspace((unsigned char)* str)) 
     str++;
@@ -461,7 +449,7 @@ void remove_spaces(char* str) {
 
 //-------------------------------------------------------------------------------------------------------------
 //gestisce possibile errori in malloc
-void* safe_malloc(int len) {
+void* safeMalloc(int len) {
   void *p = malloc(len);
   
   if(p == NULL) {
