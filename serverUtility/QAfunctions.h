@@ -8,12 +8,11 @@
 #include "rankingsFunctions.h"
 #include "gameFunctions.h"
 
-void read_line(const char* filename,char* buf, int line);
-void read_q(const char* filename,char* buf, int numQ);
-void get_answ_from_line(char *buf);
+void readLine(const char* filename,char* buf, int line);
+void getQuestionFromLine(char* buf);
+void getAnswerFromLine(char *buf);
 bool check_answer(const char *theme, char* answer, int numQ);
-void get_theme_name(int num, char* buf);
-int quanti_temi();
-void get_filename_from_index(char* bufFile, int themeChosen,struct Session* current_session); 
+void getThemeName(int num, char* buf);
+void getFilenameFromIndex(char* bufFile, int themeChosen,struct Session* current_session);
 
 #endif

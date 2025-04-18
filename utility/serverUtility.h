@@ -4,6 +4,8 @@
 #include "utility.h"
 
 #define SERVER_IP "127.0.0.1"
+#define NUM_Q 5 //numero di domande per ogni tema
+#define NUM_THEMES 5 //numero di temi disponibili 
 
 struct Player {
     char* nickname;
@@ -12,11 +14,20 @@ struct Player {
     bool* themeCompleted; //true se i-esimo quiz è stato completato
 };
 
+struct Prompt {//insieme di domanda e possibile risposte
+  char* question; //testo della domanda
+  char** answer;//array di possibili risposte giuste
+};
+
+struct Theme {
+  char* name;
+  struct Prompt quiz[NUM_Q];
+};
+
 struct Session {
   struct Player* players;
   int num_players;
-  char** availableThemes;
-  int num_themes;
+  struct Theme availableThemes[NUM_THEMES];//ogni tema è individuato dall'indice in questo array
 };
 
 // mutex per players

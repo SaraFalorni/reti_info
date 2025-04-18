@@ -1,7 +1,7 @@
 #include "./utility/clientUtility.h"
 
 void sigpipe_handler() {
-//ignora SIG_PIPE, gestito dalle funzioni recv_all_bytes e send_all_bytes
+//ignora SIG_PIPE, gestito dalle funzioni recvAllBytes e sendAllBytes
   signal(SIGPIPE, SIG_IGN);
 }
 

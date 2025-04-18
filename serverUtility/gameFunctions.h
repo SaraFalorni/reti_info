@@ -15,6 +15,9 @@ int updatePoints(int numq,char* bufR,int themeChosen,char* nickname) ;
 bool check_comand(int client_fd,char* msg);
 void do_show_score(int client_fd) ;
 void do_endquiz(int client_fd);
-int recv_all_bytes(int client_fd, void *buf, int len);
+uint32_t recvAllBytes(int client_fd, void *buf, uint32_t len);
+uint32_t sendAllBytes(int client_fd, void *buf, uint32_t len);
+uint32_t recvStringLen(int client_fd);
+int sendString(int client_fd, void *buf);
 
 #endif

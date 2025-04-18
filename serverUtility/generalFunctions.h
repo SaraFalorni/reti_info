@@ -11,7 +11,5 @@
  void init_session();
  void show_overview();
  void* client_handler(void* arg);
- void manageErrSend();
- void manageErrRecv();
 
 #endif

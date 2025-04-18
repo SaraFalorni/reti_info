@@ -14,7 +14,6 @@
 
 #define MAXCHAR_LINE 1024
 #define MAXCHAR_NICKNAME 20
-#define MAXCHAR_THEME 30
 #define BACKLOG 5
 #define MSG_LEN 3
 #define MSG_OK "OK"

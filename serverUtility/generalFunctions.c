@@ -15,29 +15,7 @@ void init_session() {
     current_session.players = NULL;
     current_session.num_players = 0;
     
-    //recupera il numero di temi dal file ./txt/indiceTemi.txt
-    current_session.num_themes = quanti_temi();
-    
-    current_session.availableThemes = (char**)malloc(current_session.num_themes * sizeof(char*));
-    if(current_session.availableThemes == NULL) {
-        //errore nel malloc 
-        perror("errore nel malloc");
-        exit(EXIT_FAILURE);
-    }
-    
-    for(int i = 0; i < current_session.num_themes; i++) {
-        char buf[MAXCHAR_LINE];
-        get_theme_name(i+1,buf);
-        //copia il nome dei temi nella corrispondente struttura dati 
-        int len_themeName = strlen(buf)+1;
-        current_session.availableThemes[i] = malloc(len_themeName);
-        if(current_session.availableThemes[i] == NULL) {
-            //errore nel malloc
-            perror("errore nel malloc");
-            exit(EXIT_FAILURE);
-        }
-        memcpy(current_session.availableThemes[i],buf,len_themeName);
-    }
+    initQuizThemes();
     
     show_overview();//funzione che mostra i giocatori connessi
     return;
@@ -98,29 +76,69 @@ void* client_handler(void* arg) {
 
 //-------------------------------------------------------------------------------------------------------------
 
-//funzione che gestisce gli errori dovuti a send o improvvise disconnessioni del server
-void manageErrSend() {
-    //gestione errore
-      if(errno == 0) 
-          printf("Connessione interrotta dal server.\n");
-      else
-          perror("errore nella send");
+void initQuizThemes() {
+    //inizializzazione dei temi
+    current_session.availableThemes = (char**)malloc(NUM_THEMES * sizeof(Theme));
+    if(current_session.availableThemes == NULL) {
+        //errore nel malloc 
+        perror("errore nel malloc");
+        exit(EXIT_FAILURE);
+    }
     
-      close(client_fd);
-      exit(EXIT_FAILURE);
+    //per ogni tema legge da file il nome del tema, domande e risposte corrette
+    for(int i = 0; i < NUM_THEMES; i++) {
+        char buf[MAXCHAR_LINE];
+        get_theme_name(i,buf);
+        
+        //copia il nome dei temi nella corrispondente struttura dati 
+        int len = strlen(buf)+1;
+        current_session.availableThemes[i].name = malloc(len);
+        if(current_session.availableThemes[i].name == NULL) {
+            //errore nel malloc
+            perror("errore nel malloc");
+            exit(EXIT_FAILURE);
+        }
+        strcpy(current_session.availableThemes[i].name,buf);
+        
+        initThemePrompt(i); //inizializza domande e risposte per l'i-esimo tema
+    }
+
 }
 
 //-------------------------------------------------------------------------------------------------------------
 
-//funzione che gestisce gli errori dovuti recv o improvvise disconnessioni del server
-void manageErrRecv() {
-    //gestione errore
-      if(errno == 0) 
-          printf("Connessione interrotta dal server.\n");
-      else
-          perror("errore nella recv");
+void initThemePrompt(int numTheme) {
+
+    char fileName[MAXCHAR_LINE];
+    getFilenameFromIndex(fileName,numTheme,current_session);
     
-      close(client_fd);
-      exit(EXIT_FAILURE);
+    for(int numPrompt = 0; numPrompt < NUM_Q ; numPrompt++) {
+        
+        char lineBuf[MAXCHAR_LINE];
+        readLine(fileName,lineBuf,numPrompt);
+        
+        char Qbuf[MAXCHAR_LINE];
+        strcpy(Qbuf,lineBuf);
+        getQuestionFromLine(Qbuf);
+        
+        //mette la domanda nell'apposita struttura dati della current_session
+        availableThemes[numTheme].quiz[numPrompt].question = malloc(strlen(Qbuf));
+        if(availableThemes[numTheme].quiz[numPrompt].question == NULL) {
+            //errore nel malloc
+            perror("errore nel malloc");
+            exit(EXIT_FAILURE);
+        }
+        
+        strcpy(availableThemes[numTheme].quiz[numPrompt].question, bufQ);
+        
+        //mette le risposte nelle apposite strutture dati
+        char Abuf[MAXCHAR_LINE];
+        strcpy(Abuf,lineBuf); 
+        getAnswerFromLine(Abuf);//risposte giuste separate da "|"
+        
+        
+        
+        
+    }//fine for
 }
 

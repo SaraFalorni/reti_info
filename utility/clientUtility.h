@@ -17,9 +17,11 @@ void sendAnswer(int client_fd,char* risp);
 void exitGame(int client_fd);
 uint32_t recvAllBytes(int client_fd, void *buf,uint32_t len);
 uint32_t sendAllBytes(int client_fd, void *buf, uint32_t len);
-char* recvString(int client_fd, void *buf);
+uint32_t recvStringLen(int client_fd);
 int sendString(int client_fd, void *buf);
 void removeSpaces(char* str);
 void* safeMalloc(int size);
+void manageErrSend(int client_fd); 
+void manageErrRecv(int client_fd);
 
 #endif
