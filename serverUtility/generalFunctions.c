@@ -122,8 +122,8 @@ void initThemePrompt(int numTheme) {
         getQuestionFromLine(Qbuf);
         
         //mette la domanda nell'apposita struttura dati della current_session
-        availableThemes[numTheme].quiz[numPrompt].question = malloc(strlen(Qbuf));
-        if(availableThemes[numTheme].quiz[numPrompt].question == NULL) {
+        current_session.availableThemes[numTheme].quiz[numPrompt].question = malloc(strlen(Qbuf));
+        if(current_session.availableThemes[numTheme].quiz[numPrompt].question == NULL) {
             //errore nel malloc
             perror("errore nel malloc");
             exit(EXIT_FAILURE);
@@ -135,6 +135,15 @@ void initThemePrompt(int numTheme) {
         char Abuf[MAXCHAR_LINE];
         strcpy(Abuf,lineBuf); 
         getAnswerFromLine(Abuf);//risposte giuste separate da "|"
+        int numA = getNumAnswers(Abuf); //ritorna il numero di risposte giuste presenti
+        *current_session.availableThemes[numTheme].quiz[numPrompt].answer = malloc(numA * sizeof(char*));
+        if(*current_session.availableThemes[numTheme].quiz[numPrompt].answer == NULL) {
+            //errore nel malloc
+            perror("errore nel malloc");
+            exit(EXIT_FAILURE);
+        }
+        
+        
         
         
         

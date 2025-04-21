@@ -71,6 +71,33 @@ void getAnswerFromLine(char *buf) {
 
 //-------------------------------------------------------------------------------------------------------------
 
+//funzione che ritorna il numero di risposte presenti data la stringa che le contiene tutte
+int sgetNumAnswers(char *bufA) {
+    char* buf = malloc(strlen(bufA)); // buffer modificabile
+    
+    int num = 0;
+    char* token = strtok(buf,"|");
+    
+    while(token != NULL) {
+        num++;
+        token = strtok(NULL,"|");
+    }
+    
+    return num;
+}
+
+//-------------------------------------------------------------------------------------------------------------
+
+//funzione che modifica buf (che contiene l'intera risposta)
+//mettendo le possibili risposte in un array
+void separateAnswers(char *bufA) {
+
+    
+    
+}
+
+//-------------------------------------------------------------------------------------------------------------
+
 //funzione che controlla la correttezza di una risposta data
 //in theme c'è una stringa con il percorso del file da aprire, answer è la risposta da controllare,
 //numQ è il numero della domanda (a partire da 0)
