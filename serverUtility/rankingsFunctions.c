@@ -12,7 +12,7 @@
 struct Player** get_theme_rankings(int client_fd) {
    
     // array di liste (classifiche) per tema, l'indice dell'array identifica il tema
-    struct Player** rankings = (struct Player**)malloc(current_session.num_themes * sizeof(struct Player*));
+    struct Player** rankings = (struct Player**)malloc(current_session.numThemes * sizeof(struct Player*));
     if(rankings == NULL) {
         //errore nel malloc chiude il thread
         perror("errore nel malloc");
@@ -24,7 +24,7 @@ struct Player** get_theme_rankings(int client_fd) {
     //crea un array di NUM_Q+1 elementi i cui indici identificano il punteggio ottenuto nel quiz per quel tema
     //ogni elemento è una lista ai giocatori che hanno ottenuto quel punteggio
     //utilizzo puntatori all'inizio della lista (score_bins) e alla fine della lista (score_bins_tails) per rendere costante il tempo di inserimento in lista
-    struct Player*** score_bins = (struct Player***)malloc(current_session.num_themes * sizeof(struct Player**));
+    struct Player*** score_bins = (struct Player***)malloc(current_session.numThemes * sizeof(struct Player**));
     if(score_bins == NULL) {
         //errore nel malloc chiude il thread
         perror("errore nel malloc");
@@ -33,7 +33,7 @@ struct Player** get_theme_rankings(int client_fd) {
         pthread_exit(NULL);
     }
     
-    struct Player*** score_bins_tails = (struct Player***)malloc(current_session.num_themes * sizeof(struct Player**));//puntatore all'ultimo elemento, per inserimento ordinato
+    struct Player*** score_bins_tails = (struct Player***)malloc(current_session.numThemes * sizeof(struct Player**));//puntatore all'ultimo elemento, per inserimento ordinato
     if(score_bins_tails == NULL) {
       //errore nel malloc chiude il thread
       perror("errore nel malloc");
@@ -43,7 +43,7 @@ struct Player** get_theme_rankings(int client_fd) {
       pthread_exit(NULL);
     }
     // Inizializzazione degli array di supporto
-    for (int i = 0; i < current_session.num_themes; i++) {
+    for (int i = 0; i < current_session.numThemes; i++) {
         //i è l'indice del tema
         //score_bins[i] è  un array di Player* di NUM_Q+1 elementi 
         score_bins[i] = (struct Player**)malloc((NUM_Q+1) * sizeof(struct Player*));
@@ -82,7 +82,7 @@ struct Player** get_theme_rankings(int client_fd) {
     while (current_player != NULL) { //per ogni giocatore
         // Per ogni tema, crea copie del giocatore solo se il punteggio è valido
         //un punteggio è valido se è diverso da -1, perchè indica che il giocatore ha partecipato a quel quiz
-        for (int i = 0; i < current_session.num_themes; i++) {
+        for (int i = 0; i < current_session.numThemes; i++) {
             //i è l'indice del tema    
 
             // Consideriamo solo i giocatori che hanno giocato a quell quiz, cioè quelli con punteggio diverso da -1
@@ -114,7 +114,7 @@ struct Player** get_theme_rankings(int client_fd) {
   pthread_mutex_unlock(&lockPlayers);
   
   // Pulizia memoria delle strutture temporanee
-  for (int theme = 0; theme < current_session.num_themes; theme++) {
+  for (int theme = 0; theme < current_session.numThemes; theme++) {
       free(score_bins[theme]);
       free(score_bins_tails[theme]);
   }
@@ -131,7 +131,7 @@ struct Player** get_theme_rankings(int client_fd) {
 //ritorna un array di liste ordinate, l'elemento i-esimo dell'array è la classifica dell'i-esimo tema
 struct Player** get_final_rankings(struct Player** rankings,struct Player*** score_bins,struct Player*** score_bins_tails ) {
     // Costruisce le liste risultanti per ogni tema
-    for (int i = 0; i < current_session.num_themes; i++) { //per ogni tema i 
+    for (int i = 0; i < current_session.numThemes; i++) { //per ogni tema i 
         rankings[i] = NULL;
         struct Player* ranking_tail = NULL;
        
@@ -157,7 +157,7 @@ struct Player** get_final_rankings(struct Player** rankings,struct Player*** sco
 //funzione che stampa le classifiche di ogni tema a partire dai rankings creati in precedenza
 void print_rankings(struct Player** rankings) {
   
-    for(int i = 0; i < current_session.num_themes ; i++) {
+    for(int i = 0; i < current_session.numThemes ; i++) {
         struct Player* current_player = rankings[i];
         
         if(current_player != NULL) 
@@ -175,7 +175,7 @@ void print_rankings(struct Player** rankings) {
 //funzione che stampa la lista dei giocatori che hanno completato il quiz per ogni tema a partire dai rankings creati
 void print_completed_quiz(struct Player** rankings) {
     bool first;
-    for(int i = 0; i < current_session.num_themes ; i++) {
+    for(int i = 0; i < current_session.numThemes ; i++) {
         struct Player* current_player = rankings[i];
         first = true;
             

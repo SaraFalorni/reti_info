@@ -14,6 +14,7 @@ void init_session() {
     //inizialmente ci sono 0 giocatori
     current_session.players = NULL;
     current_session.num_players = 0;
+    current_session.numThemes = NUM_THEMES;
     
     initQuizThemes();
     
@@ -31,8 +32,8 @@ void show_overview() {
         printf("+");
         
     printf("\nTemi:\n");
-    for(int i = 0 ; i < current_session.num_themes ; i++) {
-        printf("%d - %s\n",i+1,current_session.availableThemes[i]);
+    for(int i = 0 ; i < current_session.numThemes ; i++) {
+        printf("%d - %s\n",i+1,current_session.availableThemes[i].name);
     }
     
     for(int i = 0 ; i < NUM_SEPARATOR; i++)
@@ -78,17 +79,11 @@ void* client_handler(void* arg) {
 
 void initQuizThemes() {
     //inizializzazione dei temi
-    current_session.availableThemes = (char**)malloc(NUM_THEMES * sizeof(Theme));
-    if(current_session.availableThemes == NULL) {
-        //errore nel malloc 
-        perror("errore nel malloc");
-        exit(EXIT_FAILURE);
-    }
-    
+
     //per ogni tema legge da file il nome del tema, domande e risposte corrette
     for(int i = 0; i < NUM_THEMES; i++) {
         char buf[MAXCHAR_LINE];
-        get_theme_name(i,buf);
+        readLine("./txt/indiceTemi.txt",buf,i);
         
         //copia il nome dei temi nella corrispondente struttura dati 
         int len = strlen(buf)+1;
@@ -110,12 +105,16 @@ void initQuizThemes() {
 void initThemePrompt(int numTheme) {
 
     char fileName[MAXCHAR_LINE];
-    getFilenameFromIndex(fileName,numTheme,current_session);
+    getFilenameFromIndex(fileName,numTheme,&current_session);//dato l'indice del tema scrive in fileNAme il nome del file da aprire per leggere le domande
     
     for(int numPrompt = 0; numPrompt < NUM_Q ; numPrompt++) {
         
         char lineBuf[MAXCHAR_LINE];
-        readLine(fileName,lineBuf,numPrompt);
+        readLine(fileName,lineBuf,numPrompt); 
+        //il file relativo ad ogni tema è strutturato in modo che ogni riga sia così fatta:
+        //domanda?=rispostaGiusta1|rispostaGiusta2\n 
+        //il numero di risposte giuste presenti è variabile da domanda a domanda
+
         
         char Qbuf[MAXCHAR_LINE];
         strcpy(Qbuf,lineBuf);
@@ -129,25 +128,33 @@ void initThemePrompt(int numTheme) {
             exit(EXIT_FAILURE);
         }
         
-        strcpy(availableThemes[numTheme].quiz[numPrompt].question, bufQ);
+        strcpy(current_session.availableThemes[numTheme].quiz[numPrompt].question, Qbuf);
         
         //mette le risposte nelle apposite strutture dati
         char Abuf[MAXCHAR_LINE];
         strcpy(Abuf,lineBuf); 
         getAnswerFromLine(Abuf);//risposte giuste separate da "|"
-        int numA = getNumAnswers(Abuf); //ritorna il numero di risposte giuste presenti
+        int numA = getNumAnswers(Abuf);
+        current_session.availableThemes[numTheme].quiz[numPrompt].numAnswers = numA; //ritorna il numero di risposte giuste presenti
         *current_session.availableThemes[numTheme].quiz[numPrompt].answer = malloc(numA * sizeof(char*));
         if(*current_session.availableThemes[numTheme].quiz[numPrompt].answer == NULL) {
             //errore nel malloc
             perror("errore nel malloc");
             exit(EXIT_FAILURE);
+        }    
+        //divide la stringa con le risposte e mette ogni risposta nell'apposita struttura dati
+        char *token = strtok(Abuf,"|");
+        for(int i = 0; i < numA ; i++) {
+            current_session.availableThemes[numTheme].quiz[numPrompt].answer[i] = malloc(strlen(token)+1);
+            if(current_session.availableThemes[numTheme].quiz[numPrompt].answer[i] == NULL) {
+                //errore nel malloc
+                perror("errore nel malloc");
+                exit(EXIT_FAILURE);
+            } 
+            strcpy(current_session.availableThemes[numTheme].quiz[numPrompt].answer[i], token);
+            token = strtok(NULL, "|");
         }
-        
-        
-        
-        
-        
-        
+
     }//fine for
 }
 

@@ -72,7 +72,7 @@ void getAnswerFromLine(char *buf) {
 //-------------------------------------------------------------------------------------------------------------
 
 //funzione che ritorna il numero di risposte presenti data la stringa che le contiene tutte
-int sgetNumAnswers(char *bufA) {
+int getNumAnswers(char *bufA) {
     char* buf = malloc(strlen(bufA)); // buffer modificabile
     
     int num = 0;
@@ -88,75 +88,33 @@ int sgetNumAnswers(char *bufA) {
 
 //-------------------------------------------------------------------------------------------------------------
 
-//funzione che modifica buf (che contiene l'intera risposta)
-//mettendo le possibili risposte in un array
-void separateAnswers(char *bufA) {
-
-    
-    
-}
-
-//-------------------------------------------------------------------------------------------------------------
-
 //funzione che controlla la correttezza di una risposta data
 //in theme c'è una stringa con il percorso del file da aprire, answer è la risposta da controllare,
 //numQ è il numero della domanda (a partire da 0)
 //restituisce true se answer è giusta false altrimenti
-bool check_answer(const char *theme, char* answer, int numQ) {
+bool checkAnswer(int theme, char* answer, int numQ) {
 
-    //ricava la risposta dal file corrispondente
-    char buf[MAXCHAR_LINE];
-    readLine(theme,buf,numQ);
-
-    get_answ_from_line(buf);
-    
     //mette la risposta data in maiuscolo
     char *answer_up = malloc(strlen(answer)+1);
-    
     for(int i = 0; i < strlen(answer); i++)
         answer_up[i] = toupper(answer[i]);
+
+    //confronta le stringhe tutte in upper case per valutarne solo il contenuto
+    //le stringhe delle risposte giuste sono già in maiuscolo
+    for(int i = 0; i < current_session.availableThemes[theme].quiz[numQ].numAnswers; i++) {
         
-    answer_up[strlen(answer)] = '\0';
-
-    //le risposte giuste sono separate da "|" neel file
-    char delimitator[] = "|";
-
-    char *right_answer = strtok(buf,delimitator);
-  
-    //confronta le parti della stringa right_answer delimitate da | con la risposta data
-    while(right_answer != NULL) {
-        if(strcmp(answer_up,right_answer) == 0) {
-            //confronta le stringhe tutte in upper case per valutarne solo il contenuto
-          
+        if(strcmp(answer_up,current_session.availableThemes[theme].quiz[numQ].answer[i]) == 0) {
             //libera la memoria
             free(answer_up);
             
             return true;
         }
-        right_answer = strtok(NULL,delimitator);
     }
-
-    return false;
     //libera la memoria
     free(answer_up);
-}
 
-//-------------------------------------------------------------------------------------------------------------
+    return false;
 
-//per semplicità i temi sono identificati da un indice 
-//corrispondente al numero di riga nel file "./txt/indiceTemi.txt" (a partire da 1)
-//dato un indice (num) di tema restituisce il nome del corrispondente tema in buf
-void getThemeName(int num, char* buf) {
-    readLine("./txt/indiceTemi.txt",buf,num);
-  
-    int len = strlen(buf);
-    
-    if(len > 0 && buf[len-1] == '\n') {
-        buf[len-1] = '\0';
-    }
-    if(len > 0 && buf[len-2] == '\r') {
-        buf[len-2] = '\0';
-    }
 }
 
 //-------------------------------------------------------------------------------------------------------------

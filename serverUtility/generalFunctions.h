@@ -9,6 +9,8 @@
 #include "gameFunctions.h"
 
  void init_session();
+ void initQuizThemes();
+ void initThemePrompt(int numTheme);
  void show_overview();
  void* client_handler(void* arg);
 

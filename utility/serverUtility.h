@@ -17,6 +17,7 @@ struct Player {
 struct Prompt {//insieme di domanda e possibile risposte
   char* question; //testo della domanda
   char** answer;//array di possibili risposte giuste
+  int numAnswers;//numero di risposte giuste accettabili
 };
 
 struct Theme {
@@ -28,6 +29,7 @@ struct Session {
   struct Player* players;
   int num_players;
   struct Theme availableThemes[NUM_THEMES];//ogni tema è individuato dall'indice in questo array
+  int numThemes;
 };
 
 // mutex per players

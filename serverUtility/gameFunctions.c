@@ -57,7 +57,7 @@ void send_themes(int client_fd, char* nickname) {
     //manda un messaggio al client con il numero di temi e aspetta un feedback sulla ricezione di quest'ultimo
 
     //manda il numero dei temi al client
-    if(sendAllBytes(client_fd, &current_session.num_themes, sizeof(current_session.num_themes)) == 0) {
+    if(sendAllBytes(client_fd, &current_session.numThemes, sizeof(current_session.numThemes)) == 0) {
         perror("Errore in send() del numero di temi");
         close(client_fd);
         delete_player(nickname);
@@ -65,7 +65,7 @@ void send_themes(int client_fd, char* nickname) {
     }
 
     //il numero dei temi è stato ricevuto correttamente prosegue mandando il nome di ogni tema, uno per volta         
-      for(int i = 0; i < current_session.num_themes ; i++) {
+      for(int i = 0; i < NUM_THEMES ; i++) {
           //controllo se il giocatore ha già giocato l'i-esimo tema
           
           //lock mutex
@@ -91,7 +91,7 @@ void send_themes(int client_fd, char* nickname) {
           //client non ha ancora giocato al quiz di quel tema
           //viene inviata la lunghezza della stringa e poi la stringa contenente il nome del tema
           else {
-              if(sendString(client_fd,current_session.availableThemes[i]) <= 0) { //invio della stringa (nome dell'i-esimo tema)
+              if(sendString(client_fd,current_session.availableThemes[i].name) <= 0) { //invio della stringa (nome dell'i-esimo tema)
                   perror("Errore in send() del nome del tema");
                   close(client_fd);
                   delete_player(nickname);
@@ -117,20 +117,11 @@ void send_themes(int client_fd, char* nickname) {
 
 //funzione che implementa il gioco vero e proprio
 //ha come parametri l'indice del tema scelto dal client, il nickname e il socket
-void playquiz(int themeChosen, char* nickname, int client_fd) {
-    //stringhe in cui sono memorizzate le domande (bufQ) e il nome completo del file da cui prenderle (bufFile)
-    char bufQ[MAXCHAR_LINE], bufFile[MAXCHAR_LINE];
-    
-    //funzione che scrive in bufFile il nome del file
-    get_filename_from_index(bufFile,themeChosen, &current_session);
-    
+void playquiz(int themeChosen, char* nickname, int client_fd) {    
     //ciclo che invia ogni domanda al client 
-    for(int i = 0; i < NUM_Q ; i++) {
-        //recupero la domanda dal file
-        read_q(bufFile,bufQ,i);
-        
+    for(int i = 0; i < NUM_Q ; i++) {        
         //invia al client la lunghezza della stringa e poi la stringa contenente la i-esima domanda
-        if(sendString(client_fd,bufQ) <= 0) { //invio della stringa (domanda)
+        if(sendString(client_fd,current_session.availableThemes[themeChosen].quiz[i].question) <= 0) { //invio della stringa (domanda)
             perror("Errore in send() della domanda");
             close(client_fd);
             delete_player(nickname);
@@ -218,10 +209,6 @@ void playquiz(int themeChosen, char* nickname, int client_fd) {
 //parametri: numero della domanda (numq), risposta data (bufR), indice del tema scelto, nickname del giocatore
 int updatePoints(int numq,char* bufR,int themeChosen,char* nickname) {
     
-    //recupera il nome del file da aprire per verificare la correttezza
-    char bufFile[MAXCHAR_LINE];
-    get_filename_from_index(bufFile,themeChosen, &current_session);
-    
     //lock sul mutex
     pthread_mutex_lock(&lockPlayers);
     
@@ -230,8 +217,8 @@ int updatePoints(int numq,char* bufR,int themeChosen,char* nickname) {
     if(ptr->themePoints[themeChosen] == -1) //se è la prima domanda 
         ptr->themePoints[themeChosen] = 0;
         
-    //controllo se la risposta è corretta utilizzando check_answer che torna true (corretta) o false (errata)
-    if(check_answer(bufFile, bufR,numq)) {//risposta corretta
+    //controllo se la risposta è corretta utilizzando checkAnswer che torna true (corretta) o false (errata)
+    if(checkAnswer(themeChosen, bufR,numq)) {//risposta corretta
         ptr->themePoints[themeChosen]++;
         
         //unlock mutex
@@ -271,7 +258,7 @@ bool check_comand(int client_fd,char* msg) {
 //manda sempre la lunghezza della stringa prima della stringa
 void do_show_score(int client_fd) {
     //manda il numero di temi
-    if(sendAllBytes(client_fd,&current_session.num_themes,sizeof(int)) <= 0) { 
+    if(sendAllBytes(client_fd,&current_session.numThemes,sizeof(int)) <= 0) { 
         perror("Errore in send() del numero di classifiche");
         close(client_fd);
         pthread_exit(NULL);
@@ -281,7 +268,7 @@ void do_show_score(int client_fd) {
     struct Player* current_player;
     
     int num_ranked;//intero che contiene il numero di giocatori in una determinata classifica
-    for(int i = 0 ; i < current_session.num_themes ; i++) {
+    for(int i = 0 ; i < NUM_THEMES ; i++) {
         current_player = rankings[i]; //classifica dell'i-esimo tema
         
         //manda il numero di giocatori nella i-esima classifica

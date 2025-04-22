@@ -51,7 +51,7 @@ bool insert_player(char* nickname, int client_fd) {
     
     //INIZIALIZZAZIONE DEI TEMI CON POINTS = -1 e completed con false
     
-    new_player->themePoints = malloc(current_session.num_themes * sizeof(int));
+    new_player->themePoints = malloc(current_session.numThemes * sizeof(int));
     if(new_player->themePoints == NULL) {
         //errore nel malloc chiude il thread
         perror("errore nel malloc");
@@ -61,7 +61,7 @@ bool insert_player(char* nickname, int client_fd) {
         pthread_exit(NULL);
     }
     
-    new_player->themeCompleted = malloc(current_session.num_themes * sizeof(bool));
+    new_player->themeCompleted = malloc(current_session.numThemes * sizeof(bool));
     if(new_player->themeCompleted == NULL) {
         //errore nel malloc chiude il thread
         perror("errore nel malloc");
@@ -71,7 +71,7 @@ bool insert_player(char* nickname, int client_fd) {
         close(client_fd);
         pthread_exit(NULL);
     }
-    for(int i = 0; i < current_session.num_themes ; i++){
+    for(int i = 0; i < current_session.numThemes ; i++){
         new_player->themePoints[i] = -1;
         new_player->themeCompleted[i] = false;
     }
