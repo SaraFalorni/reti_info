@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"utility.h": "c",
+			"serverutility.h": "c",
+			"clientutility.h": "c"
+		}
+	}
+}

@@ -29,7 +29,7 @@ struct Session {
   struct Player* players;
   int num_players;
   struct Theme availableThemes[NUM_THEMES];//ogni tema è individuato dall'indice in questo array
-  int numThemes;
+  int numThemes;//numero di temi
 };
 
 // mutex per players

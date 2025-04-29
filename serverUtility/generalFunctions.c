@@ -84,6 +84,7 @@ void initQuizThemes() {
     for(int i = 0; i < NUM_THEMES; i++) {
         char buf[MAXCHAR_LINE];
         readLine("./txt/indiceTemi.txt",buf,i);
+        buf[strcspn(buf,"\n")] = '\0';
         
         //copia il nome dei temi nella corrispondente struttura dati 
         int len = strlen(buf)+1;
@@ -151,6 +152,7 @@ void initThemePrompt(int numTheme) {
                 perror("errore nel malloc");
                 exit(EXIT_FAILURE);
             } 
+            token[strcspn(token,"\n")] = '\0';
             strcpy(current_session.availableThemes[numTheme].quiz[numPrompt].answer[i], token);
             token = strtok(NULL, "|");
         }

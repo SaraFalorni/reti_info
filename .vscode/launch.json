@@ -1,0 +1,27 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Debug C Program",
+        "type": "cdbg",
+        "request": "launch",
+        "program": "${workspaceFolder}/server", // <-- metti il tuo eseguibile qui
+        "args": [], // <-- eventuali argomenti da passare al programma
+        "stopAtEntry": false,
+        "cwd": "${workspaceFolder}",
+        "environment": [],
+        "externalConsole": false,
+        "MIMode": "gdb",
+        "setupCommands": [
+          {
+            "description": "Abilita la formattazione GDB per i tipi C++",
+            "text": "-enable-pretty-printing",
+            "ignoreFailures": true
+          }
+        ],
+        "preLaunchTask": "build",
+        "miDebuggerPath": "/usr/bin/gdb" // <-- path al tuo GDB
+      }
+    ]
+  }
+  

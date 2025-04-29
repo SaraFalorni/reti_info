@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "compilazione server.."
-gcc -Wall -pthread \
+gcc -g -Wall -pthread \
 	server.c \
 	serverUtility/gameFunctions.c \
 	serverUtility/generalFunctions.c \
