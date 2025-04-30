@@ -12,7 +12,7 @@ void get_nickname(int client_fd, char* name);
 void send_themes(int client_fd, char* nickname) ;
 void playquiz(int themeChosen, char* nickname, int client_fd) ;
 int updatePoints(int numq,char* bufR,int themeChosen,char* nickname) ;
-bool check_comand(int client_fd,char* msg);
+int check_command(int client_fd,char* msg);
 void do_show_score(int client_fd) ;
 void do_endquiz(int client_fd);
 uint32_t recvAllBytes(int client_fd, void *buf, uint32_t len);

@@ -73,7 +73,8 @@ void getAnswerFromLine(char *buf) {
 
 //funzione che ritorna il numero di risposte presenti data la stringa che le contiene tutte
 int getNumAnswers(char *bufA) {
-    char* buf = malloc(strlen(bufA)); // buffer modificabile
+    char* buf = malloc(strlen(bufA)+1); // buffer modificabile
+    strcpy(buf,bufA);
     
     int num = 0;
     char* token = strtok(buf,"|");

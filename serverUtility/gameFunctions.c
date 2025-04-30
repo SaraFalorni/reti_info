@@ -129,7 +129,7 @@ void playquiz(int themeChosen, char* nickname, int client_fd) {
         }
         
         //il messaggio che riceve è per indicare se il client ha normalmente risposto o richiesto schowscore o endquiz
-        //per valutarlo sfrutta la funzione check_comand
+        //per valutarlo sfrutta la funzione check_command
         char msg[MSG_LEN];
         if(recvAllBytes(client_fd,msg,MSG_LEN) <= 0) {
             printf("Disconnessione del client o errore.\n");
@@ -137,11 +137,14 @@ void playquiz(int themeChosen, char* nickname, int client_fd) {
             close(client_fd);
             pthread_exit(NULL);
         }
-        //se check_comand torna true vuol dire che è stata fatta una show score invece di rispondere
+        //se check_command torna true vuol dire che è stata fatta una show score invece di rispondere
         //quindi va ripetuta la domanda precedente, per farlo decremento i
-        if(check_comand(client_fd,msg)) {
+        int command = check_command(client_fd,msg); 
+        if( command == 1) {
             i--;
             continue;
+        } else if(command == -1) {
+            return;
         }
           
         //RICEZIONE DELLA RISPOSTA E VALUTAZIONE DI ESSA  
@@ -238,17 +241,19 @@ int updatePoints(int numq,char* bufR,int themeChosen,char* nickname) {
 //funzione che gestisce l'eventualità che il client abbia richiesto endquiz o showscore
 //torna true se deve continuare il flusso del quiz: quindi se il client ha risposto o ha fatto show scores correttamente
 //false se deve uscire dal flusso a causa di endquiz
-bool check_comand(int client_fd,char* msg) {
-    //se ha ricevuto MSG_OK continua normalmente
-    //se ha ricevuto MSG_RK rimanda alla funzione do_show_score(client_fd)
-    //se ha ricevuto MSG_EX rimanda alla funzione do_endquiz(client_fd)
+int check_command(int client_fd,char* msg) {
+    //se ha ricevuto MSG_OK continua normalmente (torna 0)
+    //se ha ricevuto MSG_RK rimanda alla funzione do_show_score(client_fd) (torna 1)
+    //se ha ricevuto MSG_EX rimanda alla funzione do_endquiz(client_fd) (torna -1)
     if(strcmp(MSG_RK,msg) == 0) {
         do_show_score(client_fd);
-        return true;
+        return 1;
     }
-    else if(strcmp(MSG_EX,msg) == 0) 
+    else if(strcmp(MSG_EX,msg) == 0) {
         do_endquiz(client_fd);
-    return false;
+        return -1;
+    }
+    return 0;
 }
 
 //-------------------------------------------------------------------------------------------------------------
@@ -318,8 +323,6 @@ void do_endquiz(int client_fd) {
     }
     //deve eliminare il player da current_session
     delete_player(nickname);
-
-    show_overview();//da cancellare
     
     //libera la memoria
     free(nickname);
