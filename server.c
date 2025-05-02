@@ -12,7 +12,7 @@
 int main(int argc, char *argv[]) {
     //inizializza la sessione di gioco;
     
-    init_session();
+    initSession();
 
     int server_fd;//, client_fd;
     struct sockaddr_in server_addr, client_addr;
@@ -60,7 +60,7 @@ int main(int argc, char *argv[]) {
         }
 
         pthread_t tid;
-        if(pthread_create(&tid, NULL, client_handler, client_fd) != 0) {
+        if(pthread_create(&tid, NULL, clientHandler, client_fd) != 0) {
           perror("Errore nella creazione del thread");
           close(*client_fd);
           free(client_fd);

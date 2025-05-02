@@ -7,7 +7,7 @@
 
 //funzione che interagisce con il client per ottenere il nuovo nickname
 //ha come parametri il socket e una stringa vuota
-void get_nickname(int client_fd, char* name) {
+void getNickname(int client_fd, char* name) {
     char* nickname;
     
     while(1) {
@@ -27,7 +27,7 @@ void get_nickname(int client_fd, char* name) {
             pthread_exit(NULL);
         }
         //se l'inserimento va a buon fine manda un messaggio di conferma al client, altrimenti manda un messaggio di errore e chiede nuovamente un nickname
-        if(insert_player(nickname,client_fd)) {   
+        if(insertPlayer(nickname,client_fd)) {   
             //messaggio di ok a client
             if(sendAllBytes(client_fd, MSG_OK, MSG_LEN) == 0) {
                 perror("Errore in send() dell'ok al nickname");
@@ -53,14 +53,14 @@ void get_nickname(int client_fd, char* name) {
 //funzione che manda al client i nomi dei temi disponibili
 //parametri: socket del client e nickname
 //il nickname serve per un'eventuale endquiz durante il gioco
-void send_themes(int client_fd, char* nickname) {
+void sendThemes(int client_fd, char* nickname) {
     //manda un messaggio al client con il numero di temi e aspetta un feedback sulla ricezione di quest'ultimo
 
     //manda il numero dei temi al client
     if(sendAllBytes(client_fd, &current_session.numThemes, sizeof(current_session.numThemes)) == 0) {
         perror("Errore in send() del numero di temi");
         close(client_fd);
-        delete_player(nickname);
+        deletePlayer(nickname);
         pthread_exit(NULL);
     }
 
@@ -71,7 +71,7 @@ void send_themes(int client_fd, char* nickname) {
           //lock mutex
           pthread_mutex_lock(&lockPlayers);
           
-          struct Player* ptr = get_player(current_session.players,nickname);
+          struct Player* ptr = getPlayer(current_session.players,nickname);
           
           //unlock mutex
           pthread_mutex_unlock(&lockPlayers);
@@ -84,7 +84,7 @@ void send_themes(int client_fd, char* nickname) {
               if(sendString(client_fd, emptyStr) <= 0) { //invio della stringa vuota per indicare che non è un tema disponibile
                   perror("Errore in send() del nome del tema");
                   close(client_fd);
-                  delete_player(nickname);
+                  deletePlayer(nickname);
                   pthread_exit(NULL);
               } 
           }
@@ -94,7 +94,7 @@ void send_themes(int client_fd, char* nickname) {
               if(sendString(client_fd,current_session.availableThemes[i].name) <= 0) { //invio della stringa (nome dell'i-esimo tema)
                   perror("Errore in send() del nome del tema");
                   close(client_fd);
-                  delete_player(nickname);
+                  deletePlayer(nickname);
                   pthread_exit(NULL);
               }
           }
@@ -104,42 +104,42 @@ void send_themes(int client_fd, char* nickname) {
   int themeChosen;
   if(recvAllBytes(client_fd,&themeChosen,sizeof(int)) <= 0) {
       printf("Disconnessione del client o errore.\n");
-      delete_player(nickname);
+      deletePlayer(nickname);
       close(client_fd);
       pthread_exit(NULL);
   }
   
   //chiamata alla funzione che implementa lo scambio domande risposte
-  playquiz(themeChosen, nickname,client_fd);
+  playQuiz(themeChosen, nickname,client_fd);
 }
 
 //-------------------------------------------------------------------------------------------------------------
 
 //funzione che implementa il gioco vero e proprio
 //ha come parametri l'indice del tema scelto dal client, il nickname e il socket
-void playquiz(int themeChosen, char* nickname, int client_fd) {    
+void playQuiz(int themeChosen, char* nickname, int client_fd) {    
     //ciclo che invia ogni domanda al client 
     for(int i = 0; i < NUM_Q ; i++) {        
         //invia al client la lunghezza della stringa e poi la stringa contenente la i-esima domanda
         if(sendString(client_fd,current_session.availableThemes[themeChosen].quiz[i].question) <= 0) { //invio della stringa (domanda)
             perror("Errore in send() della domanda");
             close(client_fd);
-            delete_player(nickname);
+            deletePlayer(nickname);
             pthread_exit(NULL);
         }
         
         //il messaggio che riceve è per indicare se il client ha normalmente risposto o richiesto schowscore o endquiz
-        //per valutarlo sfrutta la funzione check_command
+        //per valutarlo sfrutta la funzione checkCommand
         char msg[MSG_LEN];
         if(recvAllBytes(client_fd,msg,MSG_LEN) <= 0) {
             printf("Disconnessione del client o errore.\n");
-            delete_player(nickname);
+            deletePlayer(nickname);
             close(client_fd);
             pthread_exit(NULL);
         }
-        //se check_command torna true vuol dire che è stata fatta una show score invece di rispondere
+        //se checkCommand torna true vuol dire che è stata fatta una show score invece di rispondere
         //quindi va ripetuta la domanda precedente, per farlo decremento i
-        int command = check_command(client_fd,msg); 
+        int command = checkCommand(client_fd,msg); 
         if( command == 1) {
             i--;
             continue;
@@ -155,14 +155,14 @@ void playquiz(int themeChosen, char* nickname, int client_fd) {
         //gestione errore nel malloc
         if(bufR == NULL) {
             printf("Errore nel malloc della risposta\n");
-            delete_player(nickname);
+            deletePlayer(nickname);
             close(client_fd);
             pthread_exit(NULL); 
         }        
         
         if(recvAllBytes(client_fd,bufR,len) <= 0) {
             printf("Disconnessione del client o errore.\n");
-            delete_player(nickname);
+            deletePlayer(nickname);
             close(client_fd);
             pthread_exit(NULL);
         }
@@ -177,7 +177,7 @@ void playquiz(int themeChosen, char* nickname, int client_fd) {
             if(sendAllBytes(client_fd, MSG_OK, MSG_LEN) <= 0) {
                 perror("Errore in send() del risposta corretta");
                 close(client_fd);
-                delete_player(nickname);
+                deletePlayer(nickname);
                 pthread_exit(NULL);
             }    
         }
@@ -186,7 +186,7 @@ void playquiz(int themeChosen, char* nickname, int client_fd) {
             if(sendAllBytes(client_fd, MSG_NO, MSG_LEN) <= 0) {
                 perror("Errore in send() del risposta errata");
                 close(client_fd);
-                delete_player(nickname);
+                deletePlayer(nickname);
                 pthread_exit(NULL);
             } 
         }  
@@ -200,7 +200,7 @@ void playquiz(int themeChosen, char* nickname, int client_fd) {
     //aggiorna la struttura dati corispondente in current_session
     pthread_mutex_lock(&lockPlayers);
     
-    get_player(current_session.players,nickname)->themeCompleted[themeChosen] = true;
+    getPlayer(current_session.players,nickname)->themeCompleted[themeChosen] = true;
     
     pthread_mutex_unlock(&lockPlayers);
 }
@@ -215,7 +215,7 @@ int updatePoints(int numq,char* bufR,int themeChosen,char* nickname) {
     //lock sul mutex
     pthread_mutex_lock(&lockPlayers);
     
-    struct Player* ptr = get_player(current_session.players, nickname);//puntatore al giocatore dato il nickname
+    struct Player* ptr = getPlayer(current_session.players, nickname);//puntatore al giocatore dato il nickname
     
     if(ptr->themePoints[themeChosen] == -1) //se è la prima domanda 
         ptr->themePoints[themeChosen] = 0;
@@ -241,16 +241,16 @@ int updatePoints(int numq,char* bufR,int themeChosen,char* nickname) {
 //funzione che gestisce l'eventualità che il client abbia richiesto endquiz o showscore
 //torna true se deve continuare il flusso del quiz: quindi se il client ha risposto o ha fatto show scores correttamente
 //false se deve uscire dal flusso a causa di endquiz
-int check_command(int client_fd,char* msg) {
+int checkCommand(int client_fd,char* msg) {
     //se ha ricevuto MSG_OK continua normalmente (torna 0)
-    //se ha ricevuto MSG_RK rimanda alla funzione do_show_score(client_fd) (torna 1)
-    //se ha ricevuto MSG_EX rimanda alla funzione do_endquiz(client_fd) (torna -1)
+    //se ha ricevuto MSG_RK rimanda alla funzione doShowScore(client_fd) (torna 1)
+    //se ha ricevuto MSG_EX rimanda alla funzione doEndquiz(client_fd) (torna -1)
     if(strcmp(MSG_RK,msg) == 0) {
-        do_show_score(client_fd);
+        doShowScore(client_fd);
         return 1;
     }
     else if(strcmp(MSG_EX,msg) == 0) {
-        do_endquiz(client_fd);
+        doEndquiz(client_fd);
         return -1;
     }
     return 0;
@@ -259,9 +259,9 @@ int check_command(int client_fd,char* msg) {
 //-------------------------------------------------------------------------------------------------------------
 
 //funzione che gestisce il comando show score chiamato dal client
-//manda al client prima il numero di temi e poi per ognuno di essi la classifica ottenuta con get_theme_rankings
+//manda al client prima il numero di temi e poi per ognuno di essi la classifica ottenuta con getThemeRankings
 //manda sempre la lunghezza della stringa prima della stringa
-void do_show_score(int client_fd) {
+void doShowScore(int client_fd) {
     //manda il numero di temi
     if(sendAllBytes(client_fd,&current_session.numThemes,sizeof(int)) <= 0) { 
         perror("Errore in send() del numero di classifiche");
@@ -269,7 +269,7 @@ void do_show_score(int client_fd) {
         pthread_exit(NULL);
     }
 
-    struct Player** rankings = get_theme_rankings(client_fd);//calcola le classifiche
+    struct Player** rankings = getThemeRankings(client_fd);//calcola le classifiche
     struct Player* current_player;
     
     int num_ranked;//intero che contiene il numero di giocatori in una determinata classifica
@@ -277,7 +277,7 @@ void do_show_score(int client_fd) {
         current_player = rankings[i]; //classifica dell'i-esimo tema
         
         //manda il numero di giocatori nella i-esima classifica
-        num_ranked = count_ranked(rankings,i);
+        num_ranked = countRanked(rankings,i);
         if(sendAllBytes(client_fd,&num_ranked,sizeof(int)) <= 0) { 
             perror("Errore in send() del numero di giocatori nella classifica");
             close(client_fd);
@@ -305,7 +305,7 @@ void do_show_score(int client_fd) {
 //-------------------------------------------------------------------------------------------------------------
 
 //funzione che gestisce il comando endquiz chiamato dal client
-void do_endquiz(int client_fd) {
+void doEndquiz(int client_fd) {
     //riceve dal client il nickname per poter cancellare le relative informazioni  
     uint32_t len = recvStringLen(client_fd);
     char* nickname = malloc(len);
@@ -322,7 +322,7 @@ void do_endquiz(int client_fd) {
         pthread_exit(NULL);
     }
     //deve eliminare il player da current_session
-    delete_player(nickname);
+    deletePlayer(nickname);
     
     //libera la memoria
     free(nickname);

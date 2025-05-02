@@ -8,10 +8,10 @@
 #include "PlayersFunctions.h"
 #include "gameFunctions.h"
 
-struct Player** get_theme_rankings(int client_fd);
-struct Player** get_final_rankings(struct Player** rankings,struct Player*** score_bins,struct Player*** score_bins_tails ) ;
-void print_rankings(struct Player** rankings) ;
-void print_completed_quiz(struct Player** rankings) ;
-int count_ranked(struct Player** rankings,int theme_index);
+struct Player** getThemeRankings(int client_fd);
+struct Player** getFinalRankings(struct Player** rankings,struct Player*** score_bins,struct Player*** score_bins_tails ) ;
+void printRankings(struct Player** rankings) ;
+void printCompletedQuiz(struct Player** rankings) ;
+int countRanked(struct Player** rankings,int theme_index);
 
 #endif

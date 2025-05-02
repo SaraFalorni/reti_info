@@ -8,10 +8,10 @@
 #include "PlayersFunctions.h"
 #include "gameFunctions.h"
 
- void init_session();
+ void initSession();
  void initQuizThemes();
  void initThemePrompt(int numTheme);
- void show_overview();
- void* client_handler(void* arg);
+ void showOverview();
+ void* clientHandler(void* arg);
 
 #endif

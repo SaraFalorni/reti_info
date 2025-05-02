@@ -9,7 +9,7 @@
 //funzione che restituisce la classifica per tutti i temi come array di liste (classifiche) per tema
 //il tema è individuato dall'indice (corrispondente al numero di riga che ha nel documento ./txt/indiceTemi.txt)
 //l'uso di questa funzione deve essere fatto all'interno di un blocco critico
-struct Player** get_theme_rankings(int client_fd) {
+struct Player** getThemeRankings(int client_fd) {
    
     // array di liste (classifiche) per tema, l'indice dell'array identifica il tema
     struct Player** rankings = (struct Player**)malloc(current_session.numThemes * sizeof(struct Player*));
@@ -89,7 +89,7 @@ struct Player** get_theme_rankings(int client_fd) {
             if (current_player->themePoints[i] != -1) {
               
                 //copia il giocatore solo con il punteggio/completamento del relativo tema (i-esimo tema)
-                struct Player* player_copy = copy_player(current_player,i,client_fd);
+                struct Player* player_copy = copyPlayer(current_player,i,client_fd);
                      
                 // Inserisce nel bucket in base al punteggio
                 if (score_bins[i][current_player->themePoints[i]] == NULL) {
@@ -109,7 +109,7 @@ struct Player** get_theme_rankings(int client_fd) {
   
   //ordinamento delle classifiche dagli score_bins a rankings
   //partendo dagli score_bins restituisce un array i cui elementi sono le liste ordinate per punteggio dei giocatori
-  get_final_rankings(rankings,score_bins,score_bins_tails );
+  getFinalRankings(rankings,score_bins,score_bins_tails );
   
   pthread_mutex_unlock(&lockPlayers);
   
@@ -126,10 +126,10 @@ struct Player** get_theme_rankings(int client_fd) {
 
 //-------------------------------------------------------------------------------------------------------------
 
-//funzione ausiliaria di get_theme_rankings() per creare le classifiche
+//funzione ausiliaria di getThemeRankings() per creare le classifiche
 //ordina in una sola lista per tema tutti i giocatori con relativo punteggio in ordine decrescente utilizzando gli score_bins già creati
 //ritorna un array di liste ordinate, l'elemento i-esimo dell'array è la classifica dell'i-esimo tema
-struct Player** get_final_rankings(struct Player** rankings,struct Player*** score_bins,struct Player*** score_bins_tails ) {
+struct Player** getFinalRankings(struct Player** rankings,struct Player*** score_bins,struct Player*** score_bins_tails ) {
     // Costruisce le liste risultanti per ogni tema
     for (int i = 0; i < current_session.numThemes; i++) { //per ogni tema i 
         rankings[i] = NULL;
@@ -155,7 +155,7 @@ struct Player** get_final_rankings(struct Player** rankings,struct Player*** sco
 //-------------------------------------------------------------------------------------------------------------
 
 //funzione che stampa le classifiche di ogni tema a partire dai rankings creati in precedenza
-void print_rankings(struct Player** rankings) {
+void printRankings(struct Player** rankings) {
   
     for(int i = 0; i < current_session.numThemes ; i++) {
         struct Player* current_player = rankings[i];
@@ -173,7 +173,7 @@ void print_rankings(struct Player** rankings) {
 //-------------------------------------------------------------------------------------------------------------
 
 //funzione che stampa la lista dei giocatori che hanno completato il quiz per ogni tema a partire dai rankings creati
-void print_completed_quiz(struct Player** rankings) {
+void printCompletedQuiz(struct Player** rankings) {
     bool first;
     for(int i = 0; i < current_session.numThemes ; i++) {
         struct Player* current_player = rankings[i];
@@ -194,7 +194,7 @@ void print_completed_quiz(struct Player** rankings) {
 //-------------------------------------------------------------------------------------------------------------
 
 //conta i giocatori nella lista rankings[theme_index]
-int count_ranked(struct Player** rankings,int theme_index) {
+int countRanked(struct Player** rankings,int theme_index) {
     if(rankings == NULL || theme_index < 0) 
        return -1;
       

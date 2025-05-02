@@ -8,13 +8,13 @@
 #include "PlayersFunctions.h"
 #include "rankingsFunctions.h"
 
-void get_nickname(int client_fd, char* name);
-void send_themes(int client_fd, char* nickname) ;
-void playquiz(int themeChosen, char* nickname, int client_fd) ;
+void getNickname(int client_fd, char* name);
+void sendThemes(int client_fd, char* nickname) ;
+void playQuiz(int themeChosen, char* nickname, int client_fd) ;
 int updatePoints(int numq,char* bufR,int themeChosen,char* nickname) ;
-int check_command(int client_fd,char* msg);
-void do_show_score(int client_fd) ;
-void do_endquiz(int client_fd);
+int checkCommand(int client_fd,char* msg);
+void doShowScore(int client_fd) ;
+void doEndquiz(int client_fd);
 uint32_t recvAllBytes(int client_fd, void *buf, uint32_t len);
 uint32_t sendAllBytes(int client_fd, void *buf, uint32_t len);
 uint32_t recvStringLen(int client_fd);
