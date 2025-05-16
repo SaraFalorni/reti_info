@@ -12,6 +12,8 @@
  void initQuizThemes();
  void initThemePrompt(int numTheme);
  void showOverview();
+ void initClientSet(struct ClientSet* set);//creazione dei client set per gestire client multipli
+ bool assignClientToSet(int client_fd, struct ClientSet* sets, int* numSets);
  void* clientHandler(void* arg);
 
 #endif

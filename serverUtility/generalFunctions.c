@@ -49,6 +49,58 @@ void showOverview() {
 
 //-------------------------------------------------------------------------------------------------------------
 
+//funzione che inizializza un nuovo ClientSet
+void initClientSet(struct ClientSet* set) {
+    set = malloc(sizeof(struct ClientSet));
+    //errore nel malloc
+    if(set == NULL) {
+        perror("errore nel malloc");
+        exit(EXIT_FAILURE);
+    }
+
+    //inizializzazione dei campi
+    set->numClients = 0;
+    
+    //per indicare che clientSocket è vuoto c'è -1
+    memset(set->clientSockets, -1, sizeof(set->clientSockets));
+
+    return set;
+
+}
+
+//-------------------------------------------------------------------------------------------------------------
+//funzione che controlla se c'è un posto disponibile in un set già creato altrimenti lo crea
+bool assignClientToSet(int client_fd, struct ClientSet* sets, int* numSets) {
+    for(int i = 0; i < MAX_CLIENTSETS ; i++) {
+        if(sets[i].numClients < MAX_CLIENT_IN_THREAD) {
+            //c'è posto quindi inserisce il client e ritorna true
+            sets[i].clientSockets[sets[i].numClients-1] = client_fd;
+            sets[i].numClients++;
+            return true;
+        }
+        //se non c'è posto controlla il set successivo
+    }
+
+    //se esce dal for vuol dire che non c'è un set con posti liberi
+
+    //controlla se è possibile crearlo
+    if((*numSets) < MAX_CLIENTSETS) {
+        //crea nuovo set
+        initClientSet(&sets[(*numSets)]);
+        pthread_create(sets[(*numSets)].thread, NULL, clientHandler, &sets[(*numSets)]);
+        (*numSets)++;
+        
+        sets[(*numSets)-1].clientSockets[0] = client_fd;
+        sets[(*numSets)-1].numClients++;
+        return true;
+    }
+
+    return false;
+}
+
+
+//-------------------------------------------------------------------------------------------------------------
+
 //funzione che gestisce il collegamento di un nuovo client
 void* clientHandler(void* arg) {
     int client_fd = *(int*)arg;

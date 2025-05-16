@@ -13,11 +13,14 @@ int main(int argc, char *argv[]) {
     //inizializza la sessione di gioco;
     
     initSession();
+    
+    int numSets = 0;//numero di ClientSet presenti 
+    struct ClientSet sets[MAX_CLIENTSETS];
 
-    int server_fd;//, client_fd;
+    int server_fd;
     struct sockaddr_in server_addr, client_addr;
     socklen_t client_len = sizeof(client_addr);
-    int port = 8080;//??
+    int port = 8080;
 
     if(argc == 2) {
         port = atoi(argv[1]);
@@ -59,13 +62,21 @@ int main(int argc, char *argv[]) {
             continue;
         }
 
+        //assegna il client all'ultimo set creato non ancora pieno
+        //ritorna true se c'è un posto libero, false altrimenti
+        if(!assignClientToSet(client_fd,sets,&numSets)) {
+            printf("non c'è più posto per partecipare, ritenta più tardi");
+            break;
+        }
+
+        /*
         pthread_t tid;
         if(pthread_create(&tid, NULL, clientHandler, client_fd) != 0) {
           perror("Errore nella creazione del thread");
           close(*client_fd);
           free(client_fd);
         }
-        pthread_detach(tid);
+        pthread_detach(tid);*/
 
     }
 
