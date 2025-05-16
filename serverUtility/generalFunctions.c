@@ -87,7 +87,10 @@ bool assignClientToSet(int client_fd, struct ClientSet* sets, int* numSets) {
     if((*numSets) < MAX_CLIENTSETS) {
         //crea nuovo set
         initClientSet(&sets[(*numSets)]);
-        pthread_create(sets[(*numSets)].thread, NULL, clientHandler, &sets[(*numSets)]);
+        if(pthread_create(sets[(*numSets)].thread, NULL, clientHandler, &sets[(*numSets)]) != 0) {
+            perror("Errore nella creazione del thread");
+            close(client_fd);
+        }
         (*numSets)++;
         
         sets[(*numSets)-1].clientSockets[0] = client_fd;
@@ -103,7 +106,18 @@ bool assignClientToSet(int client_fd, struct ClientSet* sets, int* numSets) {
 
 //funzione che gestisce il collegamento di un nuovo client
 void* clientHandler(void* arg) {
-    int client_fd = *(int*)arg;
+    struct ClientSet *set = (struct ClientSet*)arg;
+
+    //il primo msg che riceve è il nickname
+    char nickname[MAXCHAR_NICKNAME];
+    
+    while(1) {
+
+    }
+    
+    
+    
+    /*int client_fd = *(int*)arg;
     free(arg);
       
     //il primo msg che riceve è il nickname
@@ -124,7 +138,7 @@ void* clientHandler(void* arg) {
     }
     
     close(client_fd);
-    return NULL;
+    return NULL;*/
 }
 
 //-------------------------------------------------------------------------------------------------------------
