@@ -15,5 +15,9 @@
  void initClientSet(struct ClientSet* set);//creazione dei client set per gestire client multipli
  bool assignClientToSet(int client_fd, struct ClientSet* sets, int* numSets);
  void* clientHandler(void* arg);
+ int manageClientGame(struct ClientInfo* info);
+ int handleWaitingForNickname(struct ClientInfo* client);
+ int handleWaitingForTheme(struct ClientInfo* client);
+ int handlePlayingQuiz(struct ClientInfo* client);
 
 #endif

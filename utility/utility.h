@@ -11,6 +11,8 @@
 #include <pthread.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <sys/select.h>
+#include <sys/time.h>
 
 #define MAXCHAR_LINE 1024
 #define MAXCHAR_NICKNAME 20

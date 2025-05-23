@@ -60,9 +60,6 @@ void initClientSet(struct ClientSet* set) {
 
     //inizializzazione dei campi
     set->numClients = 0;
-    
-    //per indicare che clientSocket è vuoto c'è -1
-    memset(set->clientSockets, -1, sizeof(set->clientSockets));
 
     return set;
 
@@ -74,7 +71,11 @@ bool assignClientToSet(int client_fd, struct ClientSet* sets, int* numSets) {
     for(int i = 0; i < MAX_CLIENTSETS ; i++) {
         if(sets[i].numClients < MAX_CLIENT_IN_THREAD) {
             //c'è posto quindi inserisce il client e ritorna true
-            sets[i].clientSockets[sets[i].numClients-1] = client_fd;
+            sets[i].clients[sets[i].numClients-1].client_fd = client_fd;
+            sets[i].clients[sets[i].numClients-1].currentTheme = -1;
+            sets[i].clients[sets[i].numClients-1].currentQ = -1;
+            sets[i].clients[sets[i].numClients-1].state = WaitingForNickname;
+            sets[i].clients[sets[i].numClients-1].isResponding = false;
             sets[i].numClients++;
             return true;
         }
@@ -92,8 +93,12 @@ bool assignClientToSet(int client_fd, struct ClientSet* sets, int* numSets) {
             close(client_fd);
         }
         (*numSets)++;
-        
-        sets[(*numSets)-1].clientSockets[0] = client_fd;
+        //inserisce il client come primo client del nuovo set
+        sets[(*numSets)-1].clients[0].client_fd = client_fd;
+        sets[(*numSets)-1].clients[0].currentTheme = -1;
+        sets[(*numSets)-1].clients[0].currentQ = -1;
+        sets[(*numSets)-1].clients[0].state = WaitingForNickname;
+        sets[(*numSets)-1].clients[0].isResponding = false;
         sets[(*numSets)-1].numClients++;
         return true;
     }
@@ -108,14 +113,63 @@ bool assignClientToSet(int client_fd, struct ClientSet* sets, int* numSets) {
 void* clientHandler(void* arg) {
     struct ClientSet *set = (struct ClientSet*)arg;
 
-    //il primo msg che riceve è il nickname
-    char nickname[MAXCHAR_NICKNAME];
-    
-    while(1) {
+    fd_set master; //set principale
+    fd_set read_fds; //set di lettura
 
+    int fdmax = -1; //numero massimo di descrittori
+
+    FD_ZERO(&master);
+
+    //inizializzazione master con i client presenti nel set
+    for(int i = 0; i < set->numClients; i++) {
+        int fd = set->clients[i].client_fd;
+        FD_SET(fd,&master);
+        if(fd > fdmax)
+            fdmax = fd;
+    }
+
+    while(1) {
+        read_fds = master;
+
+        if(select(fdmax+1,&read_fds, NULL,NULL,NULL)) {
+            perror("errore nel select");
+            continue;
+        }
+
+        for(int i = 0 ; i < set->numClients; i++) {
+            int fd = set->clients[i].client_fd;
+
+            if(FD_ISSET(fd, &read_fds)) {
+
+                //gestione del client
+                if(manageClient(&set->clients[i]) <= 0) {
+                    //in caso di errore
+                    close(fd);
+                    FD_CLR(fd,&master); //elimina il client disocnesso dal set di client
+
+                    //rimuove il client dal ClientSet e compatta i client restanti
+                    for(int j = i; j < set->numClients-1; j++) {
+                        set->clients[j].client_fd = set->clients[j+1].client_fd;
+                        set->clients[j].currentTheme = set->clients[j+1].currentTheme;
+                        set->clients[j].currentQ = set->clients[j+1].currentQ;
+                        set->clients[j].state = set->clients[j+1].state;
+                        set->clients[j].isResponding = set->clients[j+1].isResponding;
+                    }
+                    set->numClients--;
+                    i--;
+
+                    //aggiorna fdmax
+                    fdmax = -1;
+                    for(int j = 0; j < set->numClients; j++) {
+                        if(set->clients[j].client_fd > fdmax)
+                            fdmax = set->clients[j].client_fd;
+                    }
+                }
+            }
+        }
     }
     
-    
+    return NULL;
     
     /*int client_fd = *(int*)arg;
     free(arg);
@@ -139,6 +193,108 @@ void* clientHandler(void* arg) {
     
     close(client_fd);
     return NULL;*/
+}
+
+//-------------------------------------------------------------------------------------------------------------
+
+//funzione che gestisce lo stato WaitingForNickname, 
+int handleWaitingForNickname(struct ClientInfo* client) {
+    //il primo msg che riceve è il nickname
+    char nickname[MAXCHAR_NICKNAME];
+    getNickname(client->client_fd,nickname); //gestisce la recezione del nickname e registra il nuovo player
+    //inserisce il nickname nel ClientInfo
+    client->nickname = malloc(strlen(nickname)+1);
+    if(client->nickname == NULL) {
+        perror("errore nel malloc");
+        return -1;//gestito in ClientHandler
+    }
+    strcpy(client->nickname,nickname);
+    //passa allo stato WaitingForTheme
+    client->state = WaitingForTheme;
+
+    //a questo punto il nuovo player è stato registrato, vengono mostrate al server le classifiche e chi ha completato i quiz
+    struct Player** rankings = getThemeRankings(client->client_fd);
+    printRankings(rankings);
+    printCompletedQuiz(rankings);
+
+    return 1;
+}
+
+//-------------------------------------------------------------------------------------------------------------
+
+//funzione che gestisce lo stato WaitingForTheme
+int handleWaitingForTheme(struct ClientInfo* client) {
+    if(client->isResponding == false) {
+        //se isResponding è false nello stato WaitingForTheme vuol dire che deve ancora ricevere i temi
+        sendThemes(client->client_fd, client->nickname);
+        client->isResponding = true;
+    }
+    else {
+        //se isResponding è true nello stato WaitingForTheme vuol dire che ha già ricevuto i temi
+        client->currentTheme = receiveThemes(client->client_fd, client->nickname);
+        //controllo che il tema scelto sia accettabile
+        if(client->currentTheme < 0) {
+            return -1;//errore gestito a livello di clientHandler
+        }
+        client->currentQ = 0;
+        client->isResponding = false;
+        client->state = PlayingQuiz;
+    }
+    return 1;
+}
+//-------------------------------------------------------------------------------------------------------------
+int handlePlayingQuiz(struct ClientInfo* client) {
+    if(client->isResponding == false) {
+        sendQuestion(&client);
+        client->isResponding = true; 
+    }
+    else {
+    //se isResponding è true nello stato PlayingQuiz 
+    //deve controllare se è una risposta o un altro comando (show score, endquiz)
+        recvCommand(&client); 
+        client->isResponding = false;
+
+        //controllo se è concluso il quiz o meno
+        if(client->currentQ > NUM_Q) {
+            //se arriva a questo punto il quiz è stato completato 
+            //aggiorna la struttura dati corispondente in current_session
+            pthread_mutex_lock(&lockPlayers);
+
+            getPlayer(current_session.players,client->nickname)->themeCompleted[client->currentTheme] = true;
+
+            pthread_mutex_unlock(&lockPlayers);
+
+            client->currentTheme = -1;
+            client->currentQ = -1;
+            client->state = WaitingForTheme; //il client ha concluso un tema, deve sceglierne un altro tra quelli rimasti
+        }
+    }
+
+    return 1;
+}
+
+
+//-------------------------------------------------------------------------------------------------------------
+
+//funzione che gestisce le comunicazioni con il client
+int manageClientGame(struct ClientInfo* client) {
+
+    switch(client->state) {
+        case WaitingForNickname:
+            if(handleWaitingForNickname(&client) == -1)
+                return -1;//gestito in ClientHandler        
+        break;
+
+        case WaitingForTheme:
+            if(handleWaitingForTheme(&client) == -1)
+                return -1;
+        break;
+
+        case PlayingQuiz:
+            if(handlePlayingQuiz(&client) == -1)
+                return -1;
+        break;
+    }
 }
 
 //-------------------------------------------------------------------------------------------------------------

@@ -100,17 +100,120 @@ void sendThemes(int client_fd, char* nickname) {
           }
      } 
   
-  //riceve dal client l'indice del tema a cui vuole giocare
-  int themeChosen;
-  if(recvAllBytes(client_fd,&themeChosen,sizeof(int)) <= 0) {
-      printf("Disconnessione del client o errore.\n");
-      deletePlayer(nickname);
-      close(client_fd);
-      pthread_exit(NULL);
-  }
-  
   //chiamata alla funzione che implementa lo scambio domande risposte
-  playQuiz(themeChosen, nickname,client_fd);
+  //playQuiz(themeChosen, nickname,client_fd);
+}
+
+//-------------------------------------------------------------------------------------------------------------
+
+//funzione che gestisce la recezione del tema scelto
+//parametri: socket del client e nickname
+//il nickname serve per un'eventuale endquiz durante il gioco
+//ritorna l'indice del tema scelto
+int recvThemes(int client_fd, char* nickname) {
+    //riceve dal client l'indice del tema a cui vuole giocare
+    int themeChosen;
+    if(recvAllBytes(client_fd,&themeChosen,sizeof(int)) <= 0) {
+        printf("Disconnessione del client o errore.\n");
+        deletePlayer(nickname);
+        close(client_fd);
+        pthread_exit(NULL);
+    }
+    return themeChosen;
+}
+
+//-------------------------------------------------------------------------------------------------------------
+
+void sendQuestion(struct ClientInfo* client) {
+    //invia al client la lunghezza della stringa e poi la stringa contenente la i-esima domanda
+    if(sendString(client->client_fd,current_session.availableThemes[client->currentTheme].quiz[client->currentQ].question) <= 0) { 
+        perror("Errore in send() della domanda");
+        close(client->client_fd);
+        deletePlayer(client->nickname);
+        pthread_exit(NULL);
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------
+//funzione che riceve il comando
+void recvCommand(struct ClientInfo* client) {
+    //il messaggio che riceve è per indicare se il client ha normalmente risposto o richiesto schowscore o endquiz
+    //per valutarlo sfrutta la funzione checkCommand
+    char msg[MSG_LEN];
+    if(recvAllBytes(client->client_fd,msg,MSG_LEN) <= 0) {
+        printf("Disconnessione del client o errore.\n");
+        deletePlayer(client->nickname);
+        close(client->client_fd);
+        pthread_exit(NULL);
+    }
+
+    //se checkCommand torna true vuol dire che è stata fatta una show score invece di rispondere
+    //quindi va ripetuta la domanda precedente, per farlo non incremento client->currentQ
+    int command = checkCommand(client->client_fd,msg); 
+    if( command == 1) {//show score
+        return;
+    } else if(command == -1) {//endquiz
+        return;
+    }
+    else {
+        //il client ha effettivamente dato la risposta
+        recvResponse(client);
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------
+
+void recvResponse(struct ClientInfo* client) {
+    
+    //RICEZIONE DELLA RISPOSTA E VALUTAZIONE DI ESSA  
+    
+    //riceve la risposta (sempre ricevendo prima il numero di byte)    
+    uint32_t len = recvStringLen(client->client_fd);
+    char* bufR = malloc(len);
+    //gestione errore nel malloc
+    if(bufR == NULL) {
+        printf("Errore nel malloc della risposta\n");
+        deletePlayer(client->nickname);
+        close(client->client_fd);
+        pthread_exit(NULL); 
+    }        
+    
+    if(recvAllBytes(client->client_fd,bufR,len) <= 0) {
+        printf("Disconnessione del client o errore.\n");
+        deletePlayer(client->nickname);
+        close(client->client_fd);
+        pthread_exit(NULL);
+    }
+    
+    //calcolo punteggio
+    int p = updatePoints(client->currentQ,bufR,client->currentTheme,client->nickname);
+    
+    //manda feedback sulla risposta data al client
+    //p = 1 se la risposta è giusta
+    if(p == 1) {   
+        //messaggio corretta al client
+        if(sendAllBytes(client->client_fd, MSG_OK, MSG_LEN) <= 0) {
+            perror("Errore in send() del risposta corretta");
+            close(client->client_fd);
+            deletePlayer(client->nickname);
+            pthread_exit(NULL);
+        }    
+    }
+    else {
+        //messaggio non corretta al client
+        if(sendAllBytes(client->client_fd, MSG_NO, MSG_LEN) <= 0) {
+            perror("Errore in send() del risposta errata");
+            close(client->client_fd);
+            deletePlayer(client->nickname);
+            pthread_exit(NULL);
+        } 
+    }  
+    
+    //libera la memoria
+    free(bufR);
+
+    client->currentQ++;
+
 }
 
 //-------------------------------------------------------------------------------------------------------------

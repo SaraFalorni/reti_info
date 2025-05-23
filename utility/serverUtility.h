@@ -9,6 +9,8 @@
 #define MAX_CLIENT_IN_THREAD 15
 #define MAX_CLIENTSETS 15
 
+enum ClientState {WaitingForNickname, WaitingForTheme, PlayingQuiz};
+
 struct Player {
     char* nickname;
     int* themePoints;//ogni tema è identificato dall'indice nell'array current_session.availableThemes
@@ -34,8 +36,18 @@ struct Session {
   int numThemes;//numero di temi
 };
 
+//informazioni utili per ricostruire lo stato del client per permettere il suo avanzamento
+struct ClientInfo {
+  int client_fd; //socket, identificativo del client
+  char* nickname; //per fare accopiamento con il player corrispondente
+  int currentTheme; //indice del tema corrente, inizializzato a -1. Fa riferimento all'indice di currentSession.availableThemes
+  int currentQ; //indice della domanda corrente, inizializzato a -1. Fa riferimento all'indice di currentSession.availableThemes[currentTheme].quiz
+  bool isResponding; //se true il server sta aspettando la risposta dal client. valido solo nello stato WaitingForTheme, PlayingQuiz
+  enum ClientState state; //stato in cui si trova il client 
+};
+
 struct ClientSet {
-  int clientSockets[MAX_CLIENT_IN_THREAD];
+  struct ClientInfo clients[MAX_CLIENT_IN_THREAD];
   int numClients;
   pthread_t thread;
 };
