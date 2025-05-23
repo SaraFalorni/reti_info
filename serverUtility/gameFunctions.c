@@ -140,16 +140,16 @@ int recvCommand(struct ClientInfo* client) {
     //se checkCommand torna true vuol dire che è stata fatta una show score invece di rispondere
     //quindi va ripetuta la domanda precedente, per farlo non incremento client->currentQ
     int command = checkCommand(client,msg); 
-    if( command == 1) {//show score
-        return 1;
-    } else if(command == 2) {//endquiz
+    if( command == 1 || command == 2) {//show score
         return 1;
     }
-    else {
+    else if(command == 0) {
         //il client ha effettivamente dato la risposta
         if(recvResponse(client) == -1)
             return -1;
     }
+    else    
+        return -1;
 }
 
 //-------------------------------------------------------------------------------------------------------------
@@ -343,7 +343,7 @@ int checkCommand(struct ClientInfo* client,char* msg) {
         doEndquiz(client);
         return 2;
     }
-    return -1;
+    return 0;
 }
 
 //-------------------------------------------------------------------------------------------------------------

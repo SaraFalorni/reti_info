@@ -54,11 +54,11 @@ bool assignClientToSet(int client_fd, struct ClientSet* sets, int* numSets) {
     for(int i = 0; i < MAX_CLIENTSETS ; i++) {
         if(sets[i].numClients < MAX_CLIENT_IN_THREAD) {
             //c'è posto quindi inserisce il client e ritorna true
-            sets[i].clients[sets[i].numClients-1].client_fd = client_fd;
-            sets[i].clients[sets[i].numClients-1].currentTheme = -1;
-            sets[i].clients[sets[i].numClients-1].currentQ = -1;
-            sets[i].clients[sets[i].numClients-1].state = WaitingForNickname;
-            sets[i].clients[sets[i].numClients-1].isResponding = false;
+            sets[i].clients[sets[i].numClients].client_fd = client_fd;
+            sets[i].clients[sets[i].numClients].currentTheme = -1;
+            sets[i].clients[sets[i].numClients].currentQ = -1;
+            sets[i].clients[sets[i].numClients].state = WaitingForNickname;
+            sets[i].clients[sets[i].numClients].isResponding = false;
             sets[i].numClients++;
             return true;
         }
@@ -225,7 +225,7 @@ int handleWaitingForTheme(struct ClientInfo* client) {
         //se isResponding è true nello stato WaitingForTheme vuol dire che ha già ricevuto i temi
         client->currentTheme = recvThemes(client->client_fd, client->nickname);
         //controllo che il tema scelto sia accettabile
-        if(client->currentTheme < 0) {
+        if(client->currentTheme == -1) {
             return -1;//errore gestito a livello di clientHandler
         }
         client->currentQ = 0;
@@ -275,17 +275,17 @@ int manageClientGame(struct ClientInfo* client) {
 
     switch(client->state) {
         case WaitingForNickname:
-            if(handleWaitingForNickname(&client) == -1)
+            if(handleWaitingForNickname(client) == -1)
                 return -1;//gestito in ClientHandler        
         break;
 
         case WaitingForTheme:
-            if(handleWaitingForTheme(&client) == -1)
+            if(handleWaitingForTheme(client) == -1)
                 return -1;
         break;
 
         case PlayingQuiz:
-            if(handlePlayingQuiz(&client) == -1)
+            if(handlePlayingQuiz(client) == -1)
                 return -1;
         break;
     }
