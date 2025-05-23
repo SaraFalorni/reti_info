@@ -17,8 +17,10 @@ void initSession() {
     current_session.numThemes = NUM_THEMES;
     
     initQuizThemes();
+    printf("dopo initQuizThemes");//da cancellare
     
     showOverview();//funzione che mostra i giocatori connessi
+    printf("dopo show overview");//da cancellare
     return;
 }
 
@@ -51,7 +53,11 @@ void showOverview() {
 //-------------------------------------------------------------------------------------------------------------
 //funzione che controlla se c'è un posto disponibile in un set già creato altrimenti lo crea
 bool assignClientToSet(int client_fd, struct ClientSet* sets, int* numSets) {
-    for(int i = 0; i < MAX_CLIENTSETS ; i++) {
+    printf("in assignClientToSet");//da cancellare
+    printf("numSEts : %d", (*numSets));//da cancellare
+    for(int i = 0; i < (*numSets) ; i++) {
+        //se c'è un thread già creato con spazio libero il client viene inserito li
+        //nel caso che sia il primo set a essere inizializzato devo comunque entrare nell'if successivo
         if(sets[i].numClients < MAX_CLIENT_IN_THREAD) {
             //c'è posto quindi inserisce il client e ritorna true
             sets[i].clients[sets[i].numClients].client_fd = client_fd;
@@ -80,7 +86,7 @@ bool assignClientToSet(int client_fd, struct ClientSet* sets, int* numSets) {
         sets[*numSets].clients[0].state = WaitingForNickname;
         sets[*numSets].clients[0].isResponding = false;
 
-        printf("num client nel set %d",sets[(*numSets)].numClients);//da cancellare
+        printf("num client nel set %d\n",sets[(*numSets)].numClients);//da cancellare
         if(pthread_create(&sets[(*numSets)].thread, NULL, clientHandler, &sets[(*numSets)]) != 0) {
             perror("Errore nella creazione del thread");
             close(client_fd);
@@ -100,6 +106,7 @@ bool assignClientToSet(int client_fd, struct ClientSet* sets, int* numSets) {
 
 //elimina n-esimo client dal set
 void removeClientFromSet(int n,struct ClientSet* set) {
+    
     //libera la memoria del nickname del client da eliminare
     if(set->clients[n].nickname != NULL) {
         free(set->clients[n].nickname);
@@ -133,6 +140,7 @@ void removeClientFromSet(int n,struct ClientSet* set) {
 
 //funzione che gestisce il collegamento di un nuovo client
 void* clientHandler(void* arg) {
+    printf("inclinet handler\n");//da cancellare
     struct ClientSet *set = (struct ClientSet*)arg;
 
     fd_set master; //set principale
@@ -144,6 +152,7 @@ void* clientHandler(void* arg) {
 
     //inizializzazione master con i client presenti nel set
     for(int i = 0; i < set->numClients; i++) {
+        printf("numClients: %d\n",set->numClients );//da cancellare
         int fd = set->clients[i].client_fd;
         FD_SET(fd,&master);
         if(fd > fdmax)
@@ -151,6 +160,7 @@ void* clientHandler(void* arg) {
     }
 
     while(1) {
+        printf("altro ciclo di while\n");
         read_fds = master;
 
         if(select(fdmax+1,&read_fds, NULL,NULL,NULL) == -1) {
@@ -181,6 +191,7 @@ void* clientHandler(void* arg) {
                 }
             }
         }
+        
     }
     
     return NULL;
@@ -213,6 +224,7 @@ void* clientHandler(void* arg) {
 
 //funzione che gestisce lo stato WaitingForNickname, 
 int handleWaitingForNickname(struct ClientInfo* client) {
+    printf("in waitingfornickname\n");//da cancellare
     //il primo msg che riceve è il nickname
     char nickname[MAXCHAR_NICKNAME];
     if(getNickname(client->client_fd,nickname) == -1)//gestisce la recezione del nickname e registra il nuovo player
@@ -245,6 +257,7 @@ int handleWaitingForNickname(struct ClientInfo* client) {
 
 //funzione che gestisce lo stato WaitingForTheme
 int handleWaitingForTheme(struct ClientInfo* client) {
+    printf("in waiting for theme\n");//da cancellare
     if(client->isResponding == false) {
         //se isResponding è false nello stato WaitingForTheme vuol dire che deve ancora ricevere i temi
         if(sendThemes(client->client_fd, client->nickname) == -1)
@@ -302,11 +315,12 @@ int handlePlayingQuiz(struct ClientInfo* client) {
 
 //funzione che gestisce le comunicazioni con il client
 int manageClientGame(struct ClientInfo* client) {
-
+    printf("in manageclientgame\n");//da cancellare
     switch(client->state) {
         case WaitingForNickname:
             if(handleWaitingForNickname(client) == -1)
-                return -1;//gestito in ClientHandler        
+                return -1;//gestito in ClientHandler 
+            printf("finito handler\n"); //da cancellare       
         break;
 
         case WaitingForTheme:
@@ -342,6 +356,7 @@ void initQuizThemes() {
             exit(EXIT_FAILURE);
         }
         strcpy(current_session.availableThemes[i].name,buf);
+        printf("prima di initThemePrompt"); //da cancellare
         
         initThemePrompt(i); //inizializza domande e risposte per l'i-esimo tema
     }

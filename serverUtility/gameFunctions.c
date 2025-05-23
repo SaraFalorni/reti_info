@@ -9,7 +9,7 @@
 //ha come parametri il socket e una stringa vuota
 int getNickname(int client_fd, char* name) {
     char* nickname;
-    
+    printf("in getNickname\n");//da cancellare
     while(1) {
         //riceve il nickname dal client
         uint32_t len = recvStringLen(client_fd);
@@ -19,11 +19,12 @@ int getNickname(int client_fd, char* name) {
             perror("Errore nel malloc del nickname\n");
             return -1;//gestito in manageClientGame
         }
-        
+        printf("ricevuto lunghezza nickname: %d\n",len);//da cancellare
         if(recvAllBytes(client_fd,nickname,len) <= 0) {
             perror("Disconnessione del client o errore.\n");
             return -1;
         }
+        printf("ricevuto nickname: %s\n", nickname);//da cancellare
         //se l'inserimento va a buon fine manda un messaggio di conferma al client, altrimenti manda un messaggio di errore e chiede nuovamente un nickname
         if(insertPlayer(nickname,client_fd) == 1) {   
             //messaggio di ok a client
@@ -42,7 +43,7 @@ int getNickname(int client_fd, char* name) {
         }
    }
    strcpy(name,nickname);//copia in name il nickname dato dal client
-
+   printf("inserito il player e mandato feedback\n");//da cancellare
    return 1;//conclusa correttamente
 }
 
@@ -53,14 +54,14 @@ int getNickname(int client_fd, char* name) {
 //il nickname serve per un'eventuale endquiz durante il gioco
 int sendThemes(int client_fd, char* nickname) {
     //manda un messaggio al client con il numero di temi e aspetta un feedback sulla ricezione di quest'ultimo
-
+    printf("in send theme\n");//da cancellare
     //manda il numero dei temi al client
     if(sendAllBytes(client_fd, &current_session.numThemes, sizeof(current_session.numThemes)) == 0) {
         perror("Errore in send() del numero di temi");
         deletePlayer(nickname);
         return -1;//gestito in manageClientGame
     }
-
+    printf("numero theme %d\n", current_session.numThemes);//da cancellare
     //il numero dei temi è stato ricevuto correttamente prosegue mandando il nome di ogni tema, uno per volta         
       for(int i = 0; i < NUM_THEMES ; i++) {
           //controllo se il giocatore ha già giocato l'i-esimo tema
@@ -96,7 +97,7 @@ int sendThemes(int client_fd, char* nickname) {
      } 
   
      return 1;//conclusa correttamente
-
+     printf("fine send theme\n");//da cancellare
   //chiamata alla funzione che implementa lo scambio domande risposte
   //playQuiz(themeChosen, nickname,client_fd);
 }

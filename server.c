@@ -13,6 +13,7 @@ int main(int argc, char *argv[]) {
     //inizializza la sessione di gioco;
     
     initSession();
+    printf("dopo init session\n");//da cancellare
     
     int numSets = 0;//numero di ClientSet presenti 
     struct ClientSet sets[MAX_CLIENTSETS];
@@ -30,9 +31,10 @@ int main(int argc, char *argv[]) {
         perror("Errore nella creazione del socket");
         exit(EXIT_FAILURE);
     }
+    printf("dopo server_fd\n"); //da cancellare
 
     server_addr.sin_family = AF_INET;
-    //server_addr.sin_addr.s_addr = INADDR_ANY;
+    server_addr.sin_addr.s_addr = INADDR_ANY;
     inet_pton(AF_INET, SERVER_IP, &server_addr.sin_addr);
     server_addr.sin_port = htons(port);
 
@@ -41,14 +43,16 @@ int main(int argc, char *argv[]) {
         close(server_fd);
         exit(EXIT_FAILURE);
     }
+    printf("dopo bind\n"); //da cancellare
 
     if(listen(server_fd, BACKLOG) == -1) {
         perror("Errore nella listen");
         exit(EXIT_FAILURE);
     }
 
-
+    printf("subito prima nel while nel main\n");//da cancellare
     while(1) {
+        printf("subito dentro il while\n");//da cancellare
         int *client_fd = malloc(sizeof(int));
         if(client_fd == NULL) {
             //errore nel malloc
@@ -56,11 +60,14 @@ int main(int argc, char *argv[]) {
             exit(EXIT_FAILURE);
         } 
           
+        printf("prima accept\n");//da cancellare
+
         //accettare connessione in arrivo
         if((*client_fd = accept(server_fd, (struct sockaddr*)&client_addr, &client_len)) == -1) {
-            perror("Errore nell'accettazione della connesione");
+            perror("Errore nell'accettazione della connessione");
             continue;
         }
+        printf("numSEts : %d\n", numSets);//da cancellare
 
         //assegna il client all'ultimo set creato non ancora pieno
         //ritorna true se c'è un posto libero, false altrimenti
@@ -68,6 +75,7 @@ int main(int argc, char *argv[]) {
             printf("non c'è più posto per partecipare, ritenta più tardi");
             break;
         }
+        printf("dopo assignClientToSet\n");//da cancellare
 
         /*
         pthread_t tid;

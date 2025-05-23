@@ -58,7 +58,7 @@ void chooseNickname(int client_fd,char* nickname) {
             perror("Errore in send() del nickname");
             exit(EXIT_FAILURE);
         }
-        
+        printf("inviato nickname %s\n",nickname);//da cancellare
         //ricezione risposta del server
         if(recvAllBytes(client_fd, msg, MSG_LEN) <= 0) { 
             perror("Errore in recv() di conferma nickname");
@@ -72,6 +72,7 @@ void chooseNickname(int client_fd,char* nickname) {
         else //nickname già in uso, continua il ciclo 
            printf("\nNickname già utilizzato\n");
     }
+    printf("ricevuto feedback sul nickname\n");//da cancellare
 }
 
 //-------------------------------------------------------------------------------------------------------------
@@ -86,7 +87,7 @@ void showQuizThemes(int client_fd) {
         perror("Errore in recv() per il numero di temi disponibili");
         exit(EXIT_FAILURE);
     }
-    
+    printf("ricevuto num temi %d\n", num_themes);//da cancellare
     //server inizia a mandare i nomi dei temi disponibili 
     char *themes[num_themes];
   
