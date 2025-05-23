@@ -14,10 +14,9 @@ struct Player** getThemeRankings(int client_fd) {
     // array di liste (classifiche) per tema, l'indice dell'array identifica il tema
     struct Player** rankings = (struct Player**)malloc(current_session.numThemes * sizeof(struct Player*));
     if(rankings == NULL) {
-        //errore nel malloc chiude il thread
+        //errore nel malloc 
         perror("errore nel malloc");
-        close(client_fd);
-        pthread_exit(NULL);
+        return NULL;
     }
        
     // per ordinare le classifiche utilizza Counting sort
@@ -26,21 +25,19 @@ struct Player** getThemeRankings(int client_fd) {
     //utilizzo puntatori all'inizio della lista (score_bins) e alla fine della lista (score_bins_tails) per rendere costante il tempo di inserimento in lista
     struct Player*** score_bins = (struct Player***)malloc(current_session.numThemes * sizeof(struct Player**));
     if(score_bins == NULL) {
-        //errore nel malloc chiude il thread
+        //errore nel malloc 
         perror("errore nel malloc");
-        close(client_fd);
         free(rankings);//libera memoria
-        pthread_exit(NULL);
+        return NULL;
     }
     
     struct Player*** score_bins_tails = (struct Player***)malloc(current_session.numThemes * sizeof(struct Player**));//puntatore all'ultimo elemento, per inserimento ordinato
     if(score_bins_tails == NULL) {
-      //errore nel malloc chiude il thread
+      //errore nel malloc 
       perror("errore nel malloc");
-      close(client_fd);
       free(rankings);//libera memoria
       free(score_bins);
-      pthread_exit(NULL);
+      return NULL;
     }
     // Inizializzazione degli array di supporto
     for (int i = 0; i < current_session.numThemes; i++) {
@@ -48,23 +45,21 @@ struct Player** getThemeRankings(int client_fd) {
         //score_bins[i] è  un array di Player* di NUM_Q+1 elementi 
         score_bins[i] = (struct Player**)malloc((NUM_Q+1) * sizeof(struct Player*));
         if(score_bins[i] == NULL) {
-            //errore nel malloc chiude il thread
+            //errore nel malloc 
             perror("errore nel malloc");
-            close(client_fd);
             free(rankings);//libera memoria
             free(score_bins);
             free(score_bins_tails);
-            pthread_exit(NULL);
+            return NULL;
         }
         score_bins_tails[i] = (struct Player**)malloc((NUM_Q+1) * sizeof(struct Player*));
         if(score_bins[i] == NULL) {
-            //errore nel malloc chiude il thread
+            //errore nel malloc 
             perror("errore nel malloc");
-            close(client_fd);
             free(rankings);//libera memoria
             free(score_bins);
             free(score_bins_tails);
-            pthread_exit(NULL);
+            return NULL;
         }
 
         for (int k = 0; k < (NUM_Q+1); k++) {
@@ -90,7 +85,11 @@ struct Player** getThemeRankings(int client_fd) {
               
                 //copia il giocatore solo con il punteggio/completamento del relativo tema (i-esimo tema)
                 struct Player* player_copy = copyPlayer(current_player,i,client_fd);
-                     
+                   
+                if(player_copy == NULL) {
+                    //gestione dell'errore
+                    return NULL;
+                }
                 // Inserisce nel bucket in base al punteggio
                 if (score_bins[i][current_player->themePoints[i]] == NULL) {
                     //se è il primo giocatore inserito

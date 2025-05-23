@@ -17,7 +17,7 @@ struct Player* findLastPlayer(struct Player* p) {
 
 //funzione che inserisce un nuovo giocatore con il nickname passato come parametro
 //ritorna true se l'inserimento va a buon fine, false altrimenti
-bool insertPlayer(char* nickname, int client_fd) {
+int insertPlayer(char* nickname, int client_fd) {
     //inserimento in players con mutex per evitare errori
     pthread_mutex_lock(&lockPlayers);
     
@@ -27,25 +27,23 @@ bool insertPlayer(char* nickname, int client_fd) {
     //se esiste un giocatore con lo stesso nickname torna false
     if(getPlayer(current_session.players,nickname) != NULL) {
         pthread_mutex_unlock(&lockPlayers);
-        return false;
+        return 0;
     }
     
     //altrimenti crea un nuovo giocatore
     new_player = (struct Player*)malloc(sizeof(struct Player));
     if(new_player == NULL) {
-        //errore nel malloc chiude il thread
+        //errore nel malloc 
         perror("errore nel malloc");
-        close(client_fd);
-        pthread_exit(NULL);
+        return -1;
     }
     int len_nickname = strlen(nickname)+1;
     new_player->nickname = (char*)malloc(len_nickname);
     if(new_player->nickname == NULL) {
-        //errore nel malloc chiude il thread
+        //errore nel malloc 
         perror("errore nel malloc");
         free(new_player);//libera la memoria
-        close(client_fd);
-        pthread_exit(NULL);
+        return -1;
     }
     memcpy(new_player->nickname,nickname,len_nickname);  
     
@@ -53,23 +51,21 @@ bool insertPlayer(char* nickname, int client_fd) {
     
     new_player->themePoints = malloc(current_session.numThemes * sizeof(int));
     if(new_player->themePoints == NULL) {
-        //errore nel malloc chiude il thread
+        //errore nel malloc 
         perror("errore nel malloc");
         free(new_player->nickname);//libera la memoria
         free(new_player);
-        close(client_fd);
-        pthread_exit(NULL);
+        return -1;
     }
     
     new_player->themeCompleted = malloc(current_session.numThemes * sizeof(bool));
     if(new_player->themeCompleted == NULL) {
-        //errore nel malloc chiude il thread
+        //errore nel malloc 
         perror("errore nel malloc");
         free(new_player->themePoints);//libera la memoria
         free(new_player->nickname);
         free(new_player);
-        close(client_fd);
-        pthread_exit(NULL);
+        return -1;
     }
     for(int i = 0; i < current_session.numThemes ; i++){
         new_player->themePoints[i] = -1;
@@ -89,7 +85,7 @@ bool insertPlayer(char* nickname, int client_fd) {
     //sblocco il mutex
     pthread_mutex_unlock(&lockPlayers);
 
-    return true; //inserimento avvenuto con successo
+    return 1; //inserimento avvenuto con successo
 }
 
 //-------------------------------------------------------------------------------------------------------------
@@ -129,31 +125,28 @@ struct Player* copyPlayer(struct Player* current_player,int index_theme,int clie
     // Crea una copia del giocatore
     struct Player* player_copy = (struct Player*)malloc(sizeof(struct Player));
     if(player_copy == NULL) {
-        //errore nel malloc chiude il thread
+        //errore nel malloc 
         perror("errore nel malloc");
-        close(client_fd);
-        pthread_exit(NULL);
+        return NULL;
     }
    
     player_copy->nickname = malloc(strlen(current_player->nickname));
     if(player_copy->nickname == NULL) {
-        //errore nel malloc chiude il thread
+        //errore nel malloc 
         perror("errore nel malloc");
-        close(client_fd);
         free(player_copy);
-        pthread_exit(NULL);
+        return NULL;
     }
     strcpy(player_copy->nickname,current_player->nickname);
 
     //basta memorizzare il punteggio relativo a solo quel tema
     player_copy->themePoints = malloc(sizeof(int));
     if(player_copy->themePoints == NULL) {
-        //errore nel malloc chiude il thread
+        //errore nel malloc 
         perror("errore nel malloc");
-        close(client_fd);
         free(player_copy->nickname);
         free(player_copy);
-        pthread_exit(NULL);
+        return NULL;
     }
     
     player_copy->themePoints[0] = current_player->themePoints[index_theme];
@@ -162,13 +155,12 @@ struct Player* copyPlayer(struct Player* current_player,int index_theme,int clie
     //basta memorizzare il punteggio relativo a solo quel tema
     player_copy->themeCompleted = malloc(sizeof(bool));
     if(player_copy->themeCompleted == NULL) {
-        //errore nel malloc chiude il thread
+        //errore nel malloc 
         perror("errore nel malloc");
-        close(client_fd);
         free(player_copy->nickname);
         free(player_copy->themePoints);
         free(player_copy);
-        pthread_exit(NULL);
+        return NULL;
     }
     player_copy->themeCompleted[0] = current_player->themeCompleted[index_theme];
     

@@ -9,7 +9,7 @@
 #include "gameFunctions.h"
 
 struct Player* findLastPlayer(struct Player* p);
-bool insertPlayer(char* nickname,int client_fd) ;
+int insertPlayer(char* nickname,int client_fd) ;
 struct Player* getPlayer(struct Player* current_player,char* nickname) ;
 struct Player* getPlayerIndex(struct Player* current_player,int index) ;
 struct Player* copyPlayer(struct Player* current_player,int index_theme,int client_fd) ;

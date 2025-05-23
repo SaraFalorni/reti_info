@@ -47,23 +47,6 @@ void showOverview() {
     pthread_mutex_unlock(&lockPlayers);
 }
 
-//-------------------------------------------------------------------------------------------------------------
-
-//funzione che inizializza un nuovo ClientSet
-void initClientSet(struct ClientSet* set) {
-    set = malloc(sizeof(struct ClientSet));
-    //errore nel malloc
-    if(set == NULL) {
-        perror("errore nel malloc");
-        exit(EXIT_FAILURE);
-    }
-
-    //inizializzazione dei campi
-    set->numClients = 0;
-
-    return set;
-
-}
 
 //-------------------------------------------------------------------------------------------------------------
 //funzione che controlla se c'è un posto disponibile in un set già creato altrimenti lo crea
@@ -87,7 +70,8 @@ bool assignClientToSet(int client_fd, struct ClientSet* sets, int* numSets) {
     //controlla se è possibile crearlo
     if((*numSets) < MAX_CLIENTSETS) {
         //crea nuovo set
-        initClientSet(&sets[(*numSets)]);
+        //inizializzazione dei campi
+        sets[(*numSets)].numClients = 0;
         if(pthread_create(sets[(*numSets)].thread, NULL, clientHandler, &sets[(*numSets)]) != 0) {
             perror("Errore nella creazione del thread");
             close(client_fd);
@@ -131,7 +115,7 @@ void* clientHandler(void* arg) {
     while(1) {
         read_fds = master;
 
-        if(select(fdmax+1,&read_fds, NULL,NULL,NULL)) {
+        if(select(fdmax+1,&read_fds, NULL,NULL,NULL) == -1) {
             perror("errore nel select");
             continue;
         }
@@ -201,7 +185,8 @@ void* clientHandler(void* arg) {
 int handleWaitingForNickname(struct ClientInfo* client) {
     //il primo msg che riceve è il nickname
     char nickname[MAXCHAR_NICKNAME];
-    getNickname(client->client_fd,nickname); //gestisce la recezione del nickname e registra il nuovo player
+    if(getNickname(client->client_fd,nickname) == -1)//gestisce la recezione del nickname e registra il nuovo player
+        return -1; 
     //inserisce il nickname nel ClientInfo
     client->nickname = malloc(strlen(nickname)+1);
     if(client->nickname == NULL) {
@@ -214,6 +199,12 @@ int handleWaitingForNickname(struct ClientInfo* client) {
 
     //a questo punto il nuovo player è stato registrato, vengono mostrate al server le classifiche e chi ha completato i quiz
     struct Player** rankings = getThemeRankings(client->client_fd);
+    if(rankings == NULL) {
+        //gestione errore
+        perror("Errore nel calcolo della classifica");
+        deletePlayer(client->nickname);
+        return -1;//gestito in manageClientGame
+    }
     printRankings(rankings);
     printCompletedQuiz(rankings);
 
@@ -226,12 +217,13 @@ int handleWaitingForNickname(struct ClientInfo* client) {
 int handleWaitingForTheme(struct ClientInfo* client) {
     if(client->isResponding == false) {
         //se isResponding è false nello stato WaitingForTheme vuol dire che deve ancora ricevere i temi
-        sendThemes(client->client_fd, client->nickname);
+        if(sendThemes(client->client_fd, client->nickname) == -1);
+            return -1;
         client->isResponding = true;
     }
     else {
         //se isResponding è true nello stato WaitingForTheme vuol dire che ha già ricevuto i temi
-        client->currentTheme = receiveThemes(client->client_fd, client->nickname);
+        client->currentTheme = recvThemes(client->client_fd, client->nickname);
         //controllo che il tema scelto sia accettabile
         if(client->currentTheme < 0) {
             return -1;//errore gestito a livello di clientHandler
@@ -245,13 +237,15 @@ int handleWaitingForTheme(struct ClientInfo* client) {
 //-------------------------------------------------------------------------------------------------------------
 int handlePlayingQuiz(struct ClientInfo* client) {
     if(client->isResponding == false) {
-        sendQuestion(&client);
+        if(sendQuestion(&client) == -1)
+            return -1;
         client->isResponding = true; 
     }
     else {
     //se isResponding è true nello stato PlayingQuiz 
     //deve controllare se è una risposta o un altro comando (show score, endquiz)
-        recvCommand(&client); 
+        if(recvCommand(&client) == -1)
+            return -1; 
         client->isResponding = false;
 
         //controllo se è concluso il quiz o meno
@@ -295,6 +289,7 @@ int manageClientGame(struct ClientInfo* client) {
                 return -1;
         break;
     }
+    return 1;
 }
 
 //-------------------------------------------------------------------------------------------------------------
