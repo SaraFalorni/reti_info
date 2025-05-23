@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
 
         //assegna il client all'ultimo set creato non ancora pieno
         //ritorna true se c'è un posto libero, false altrimenti
-        if(!assignClientToSet(client_fd,sets,&numSets)) {
+        if(!assignClientToSet(*client_fd,sets,&numSets)) {
             printf("non c'è più posto per partecipare, ritenta più tardi");
             break;
         }

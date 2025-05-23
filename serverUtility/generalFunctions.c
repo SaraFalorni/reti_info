@@ -71,23 +71,61 @@ bool assignClientToSet(int client_fd, struct ClientSet* sets, int* numSets) {
     if((*numSets) < MAX_CLIENTSETS) {
         //crea nuovo set
         //inizializzazione dei campi
-        sets[(*numSets)].numClients = 0;
-        if(pthread_create(sets[(*numSets)].thread, NULL, clientHandler, &sets[(*numSets)]) != 0) {
+        sets[(*numSets)].numClients = 1;
+        
+        //inserisce il client come primo client del nuovo set
+        sets[*numSets].clients[0].client_fd = client_fd;
+        sets[*numSets].clients[0].currentTheme = -1;
+        sets[*numSets].clients[0].currentQ = -1;
+        sets[*numSets].clients[0].state = WaitingForNickname;
+        sets[*numSets].clients[0].isResponding = false;
+
+        printf("num client nel set %d",sets[(*numSets)].numClients);//da cancellare
+        if(pthread_create(&sets[(*numSets)].thread, NULL, clientHandler, &sets[(*numSets)]) != 0) {
             perror("Errore nella creazione del thread");
             close(client_fd);
+            return false;
         }
+
+
         (*numSets)++;
-        //inserisce il client come primo client del nuovo set
-        sets[(*numSets)-1].clients[0].client_fd = client_fd;
-        sets[(*numSets)-1].clients[0].currentTheme = -1;
-        sets[(*numSets)-1].clients[0].currentQ = -1;
-        sets[(*numSets)-1].clients[0].state = WaitingForNickname;
-        sets[(*numSets)-1].clients[0].isResponding = false;
-        sets[(*numSets)-1].numClients++;
+
         return true;
     }
 
     return false;
+}
+
+//-------------------------------------------------------------------------------------------------------------
+
+//elimina n-esimo client dal set
+void removeClientFromSet(int n,struct ClientSet* set) {
+    //libera la memoria del nickname del client da eliminare
+    if(set->clients[n].nickname != NULL) {
+        free(set->clients[n].nickname);
+        set->clients[n].nickname = NULL;
+    }
+
+    //rimuove il client dal ClientSet e compatta i client restanti
+    for(int j = n; j < set->numClients-1; j++) {
+        set->clients[j].client_fd = set->clients[j+1].client_fd;
+        set->clients[j].currentTheme = set->clients[j+1].currentTheme;
+        set->clients[j].currentQ = set->clients[j+1].currentQ;
+        set->clients[j].state = set->clients[j+1].state;
+        set->clients[j].isResponding = set->clients[j+1].isResponding;
+
+        //copia del nickname
+        free(set->clients[j].nickname);
+        set->clients[j].nickname = malloc(strlen(set->clients[j+1].nickname)+1);
+        if(set->clients[j].nickname == NULL) {
+            //errore nel malloc
+            perror("errore nel malloc");
+
+        }
+        strcpy(set->clients[j].nickname,set->clients[j+1].nickname);
+        
+    }
+    set->numClients--;
 }
 
 
@@ -126,20 +164,12 @@ void* clientHandler(void* arg) {
             if(FD_ISSET(fd, &read_fds)) {
 
                 //gestione del client
-                if(manageClient(&set->clients[i]) <= 0) {
+                if(manageClientGame(&set->clients[i]) <= 0) {
                     //in caso di errore
                     close(fd);
                     FD_CLR(fd,&master); //elimina il client disocnesso dal set di client
 
-                    //rimuove il client dal ClientSet e compatta i client restanti
-                    for(int j = i; j < set->numClients-1; j++) {
-                        set->clients[j].client_fd = set->clients[j+1].client_fd;
-                        set->clients[j].currentTheme = set->clients[j+1].currentTheme;
-                        set->clients[j].currentQ = set->clients[j+1].currentQ;
-                        set->clients[j].state = set->clients[j+1].state;
-                        set->clients[j].isResponding = set->clients[j+1].isResponding;
-                    }
-                    set->numClients--;
+                    removeClientFromSet(i,set);//elimina i esimo client dal set
                     i--;
 
                     //aggiorna fdmax
@@ -217,7 +247,7 @@ int handleWaitingForNickname(struct ClientInfo* client) {
 int handleWaitingForTheme(struct ClientInfo* client) {
     if(client->isResponding == false) {
         //se isResponding è false nello stato WaitingForTheme vuol dire che deve ancora ricevere i temi
-        if(sendThemes(client->client_fd, client->nickname) == -1);
+        if(sendThemes(client->client_fd, client->nickname) == -1)
             return -1;
         client->isResponding = true;
     }
@@ -237,14 +267,14 @@ int handleWaitingForTheme(struct ClientInfo* client) {
 //-------------------------------------------------------------------------------------------------------------
 int handlePlayingQuiz(struct ClientInfo* client) {
     if(client->isResponding == false) {
-        if(sendQuestion(&client) == -1)
+        if(sendQuestion(client) == -1)
             return -1;
         client->isResponding = true; 
     }
     else {
     //se isResponding è true nello stato PlayingQuiz 
     //deve controllare se è una risposta o un altro comando (show score, endquiz)
-        if(recvCommand(&client) == -1)
+        if(recvCommand(client) == -1)
             return -1; 
         client->isResponding = false;
 

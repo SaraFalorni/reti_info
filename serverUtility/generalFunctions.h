@@ -13,6 +13,7 @@
  void initThemePrompt(int numTheme);
  void showOverview();
  bool assignClientToSet(int client_fd, struct ClientSet* sets, int* numSets);
+ void removeClientFromSet(int n,struct ClientSet* set);
  void* clientHandler(void* arg);
  int manageClientGame(struct ClientInfo* info);
  int handleWaitingForNickname(struct ClientInfo* client);

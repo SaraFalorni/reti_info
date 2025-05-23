@@ -42,6 +42,8 @@ int getNickname(int client_fd, char* name) {
         }
    }
    strcpy(name,nickname);//copia in name il nickname dato dal client
+
+   return 1;//conclusa correttamente
 }
 
 //-------------------------------------------------------------------------------------------------------------
@@ -93,6 +95,8 @@ int sendThemes(int client_fd, char* nickname) {
           }
      } 
   
+     return 1;//conclusa correttamente
+
   //chiamata alla funzione che implementa lo scambio domande risposte
   //playQuiz(themeChosen, nickname,client_fd);
 }
@@ -123,6 +127,8 @@ int sendQuestion(struct ClientInfo* client) {
         deletePlayer(client->nickname);
         return -1;//gestito in manageClientGame
     }
+
+    return 1;
 }
 
 //-------------------------------------------------------------------------------------------------------------
@@ -147,6 +153,8 @@ int recvCommand(struct ClientInfo* client) {
         //il client ha effettivamente dato la risposta
         if(recvResponse(client) == -1)
             return -1;
+        else
+            return 1;
     }
     else    
         return -1;
@@ -201,13 +209,15 @@ int recvResponse(struct ClientInfo* client) {
 
     client->currentQ++;
 
+    return 1;
+
 }
 
 //-------------------------------------------------------------------------------------------------------------
 
 //funzione che implementa il gioco vero e proprio
 //ha come parametri l'indice del tema scelto dal client, il nickname e il socket
-void playQuiz(int themeChosen, char* nickname, int client_fd) {    
+/*void playQuiz(int themeChosen, char* nickname, int client_fd) {    
     //ciclo che invia ogni domanda al client 
     for(int i = 0; i < NUM_Q ; i++) {        
         //invia al client la lunghezza della stringa e poi la stringa contenente la i-esima domanda
@@ -293,7 +303,7 @@ void playQuiz(int themeChosen, char* nickname, int client_fd) {
     getPlayer(current_session.players,nickname)->themeCompleted[themeChosen] = true;
     
     pthread_mutex_unlock(&lockPlayers);
-}
+}*/
 
 //-------------------------------------------------------------------------------------------------------------
 
@@ -397,12 +407,14 @@ int doShowScore(struct ClientInfo* client) {
             current_player = current_player->next;
         }   
     }
+
+    return 1;
 }
 
 //-------------------------------------------------------------------------------------------------------------
 
 //funzione che gestisce il comando endquiz chiamato dal client
-void doEndquiz(struct ClientInfo* client) {
+int doEndquiz(struct ClientInfo* client) {
     //riceve dal client il nickname per poter cancellare le relative informazioni  
     uint32_t len = recvStringLen(client->client_fd);
     char* nickname = malloc(len);
