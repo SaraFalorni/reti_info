@@ -16,7 +16,7 @@ if [ $? -ne 0 ]; then
 fi
 
 echo "compilazione client.."
-gcc -Wall \
+gcc -g -Wall \
 	client.c \
 	utility/clientUtility.c \
 	-o client

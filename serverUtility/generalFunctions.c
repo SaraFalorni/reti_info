@@ -163,17 +163,46 @@ void* clientHandler(void* arg) {
         printf("altro ciclo di while\n");
         read_fds = master;
 
-        if(select(fdmax+1,&read_fds, NULL,NULL,NULL) == -1) {
+        //timeout
+        struct timeval timeout;
+        timeout.tv_sec = 1;
+        timeout.tv_usec = 0;
+
+        if(select(fdmax+1,&read_fds, NULL,NULL,&timeout) == -1) {
             perror("errore nel select");
             continue;
         }
 
         for(int i = 0 ; i < set->numClients; i++) {
+            printf("Stato: %d, isResponding: %d\n",set->clients[i].state, set->clients[i].isResponding); //da cancellare
             int fd = set->clients[i].client_fd;
 
             if(FD_ISSET(fd, &read_fds)) {
 
                 //gestione del client
+                if(manageClientGame(&set->clients[i]) <= 0) {
+                    //in caso di errore
+                    close(fd);
+                    FD_CLR(fd,&master); //elimina il client disocnesso dal set di client
+
+                    removeClientFromSet(i,set);//elimina i esimo client dal set
+                    i--;
+
+                    //aggiorna fdmax
+                    fdmax = -1;
+                    for(int j = 0; j < set->numClients; j++) {
+                        if(set->clients[j].client_fd > fdmax)
+                            fdmax = set->clients[j].client_fd;
+                    }
+                }
+            }
+
+            //se il client è in attesa di un messaggio dal server entra comunque in manageClientGame
+            //caso 1: aspetta numero e nomi dei temi
+            //caso 2: aspetta una domanda del quiz
+            else if ( (set->clients[i].state == WaitingForTheme && set->clients[i].isResponding == false) ||
+                       (set->clients[i].state == PlayingQuiz && set->clients[i].isResponding == false ) ) {
+                //invio gestito in manageClientGame
                 if(manageClientGame(&set->clients[i]) <= 0) {
                     //in caso di errore
                     close(fd);
@@ -289,6 +318,7 @@ int handlePlayingQuiz(struct ClientInfo* client) {
     //deve controllare se è una risposta o un altro comando (show score, endquiz)
         if(recvCommand(client) == -1)
             return -1; 
+
         client->isResponding = false;
 
         //controllo se è concluso il quiz o meno
@@ -304,6 +334,7 @@ int handlePlayingQuiz(struct ClientInfo* client) {
             client->currentTheme = -1;
             client->currentQ = -1;
             client->state = WaitingForTheme; //il client ha concluso un tema, deve sceglierne un altro tra quelli rimasti
+            client->isResponding = false;
         }
     }
 
