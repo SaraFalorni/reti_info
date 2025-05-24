@@ -329,10 +329,11 @@ void showScore(int client_fd) {
 //esegue la funzione endquiz come descritto nelle specifiche
 void endGame(int client_fd,char* nickname) {
     //manda al server il nickname per permettere al server di cancellare il corrispondente Player 
-    if(sendString(client_fd, nickname) <= 0) {
+    /*if(sendString(client_fd, nickname) <= 0) {
         perror("Errore in send() del nickname");
         exit(EXIT_FAILURE);
-    }
+    }*/
+   //da cancellare
     strcpy(nickname, "");
     
     //torna al main menu

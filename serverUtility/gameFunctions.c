@@ -147,7 +147,7 @@ int recvCommand(struct ClientInfo* client) {
     //se checkCommand torna true vuol dire che è stata fatta una show score invece di rispondere
     //quindi va ripetuta la domanda precedente, per farlo non incremento client->currentQ
     int command = checkCommand(client,msg); 
-    if( command == 1 || command == 2) {//show score
+    if( command == 1 || command == 2) {//show score o endquiz
         return 1;
     }
     else if(command == 0) {
@@ -416,7 +416,7 @@ int doShowScore(struct ClientInfo* client) {
 
 //funzione che gestisce il comando endquiz chiamato dal client
 int doEndquiz(struct ClientInfo* client) {
-    //riceve dal client il nickname per poter cancellare le relative informazioni  
+    /*//riceve dal client il nickname per poter cancellare le relative informazioni  
     uint32_t len = recvStringLen(client->client_fd);
     char* nickname = malloc(len);
     //gestione errore nel malloc
@@ -430,13 +430,17 @@ int doEndquiz(struct ClientInfo* client) {
         printf("Disconnessione del client o errore.\n");
         deletePlayer(client->nickname);
         return -1;//gestito in manageClientGame
-    }
+    }*/ //da cancellare
     //deve eliminare il player da current_session
-    deletePlayer(nickname);
+    deletePlayer(client->nickname);
     
-    //libera la memoria
-    free(nickname);
-    return -1;
+    //resetta le info di ClientInfo
+    free(client->nickname);
+    client->currentTheme = -1;
+    client->currentQ = -1;
+    client->isResponding = false;
+    client->state = WaitingForNickname;
+    return 1;
       
 }
 

@@ -322,7 +322,7 @@ int handlePlayingQuiz(struct ClientInfo* client) {
         client->isResponding = false;
 
         //controllo se è concluso il quiz o meno
-        if(client->currentQ > NUM_Q) {
+        if(client->currentQ == NUM_Q) {
             //se arriva a questo punto il quiz è stato completato 
             //aggiorna la struttura dati corispondente in current_session
             pthread_mutex_lock(&lockPlayers);
