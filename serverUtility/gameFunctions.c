@@ -9,7 +9,7 @@
 //ha come parametri il socket e una stringa vuota
 int getNickname(int client_fd, char* name) {
     char* nickname;
-    printf("in getNickname\n");//da cancellare
+    
     while(1) {
         //riceve il nickname dal client
         uint32_t len = recvStringLen(client_fd);
@@ -19,12 +19,12 @@ int getNickname(int client_fd, char* name) {
             perror("Errore nel malloc del nickname\n");
             return -1;//gestito in manageClientGame
         }
-        printf("ricevuto lunghezza nickname: %d\n",len);//da cancellare
+        
         if(recvAllBytes(client_fd,nickname,len) <= 0) {
             perror("Disconnessione del client o errore.\n");
             return -1;
         }
-        printf("ricevuto nickname: %s\n", nickname);//da cancellare
+        
         //se l'inserimento va a buon fine manda un messaggio di conferma al client, altrimenti manda un messaggio di errore e chiede nuovamente un nickname
         if(insertPlayer(nickname,client_fd) == 1) {   
             //messaggio di ok a client
@@ -43,7 +43,7 @@ int getNickname(int client_fd, char* name) {
         }
    }
    strcpy(name,nickname);//copia in name il nickname dato dal client
-   printf("inserito il player e mandato feedback\n");//da cancellare
+   
    return 1;//conclusa correttamente
 }
 
@@ -54,14 +54,14 @@ int getNickname(int client_fd, char* name) {
 //il nickname serve per un'eventuale endquiz durante il gioco
 int sendThemes(int client_fd, char* nickname) {
     //manda un messaggio al client con il numero di temi e aspetta un feedback sulla ricezione di quest'ultimo
-    printf("in send theme\n");//da cancellare
+    
     //manda il numero dei temi al client
     if(sendAllBytes(client_fd, &current_session.numThemes, sizeof(current_session.numThemes)) == 0) {
         perror("Errore in send() del numero di temi");
         deletePlayer(nickname);
         return -1;//gestito in manageClientGame
     }
-    printf("numero theme %d\n", current_session.numThemes);//da cancellare
+    
     //il numero dei temi è stato ricevuto correttamente prosegue mandando il nome di ogni tema, uno per volta         
       for(int i = 0; i < NUM_THEMES ; i++) {
           //controllo se il giocatore ha già giocato l'i-esimo tema
@@ -97,9 +97,6 @@ int sendThemes(int client_fd, char* nickname) {
      } 
   
      return 1;//conclusa correttamente
-     printf("fine send theme\n");//da cancellare
-  //chiamata alla funzione che implementa lo scambio domande risposte
-  //playQuiz(themeChosen, nickname,client_fd);
 }
 
 //-------------------------------------------------------------------------------------------------------------
@@ -216,98 +213,6 @@ int recvResponse(struct ClientInfo* client) {
 
 //-------------------------------------------------------------------------------------------------------------
 
-//funzione che implementa il gioco vero e proprio
-//ha come parametri l'indice del tema scelto dal client, il nickname e il socket
-/*void playQuiz(int themeChosen, char* nickname, int client_fd) {    
-    //ciclo che invia ogni domanda al client 
-    for(int i = 0; i < NUM_Q ; i++) {        
-        //invia al client la lunghezza della stringa e poi la stringa contenente la i-esima domanda
-        if(sendString(client_fd,current_session.availableThemes[themeChosen].quiz[i].question) <= 0) { //invio della stringa (domanda)
-            perror("Errore in send() della domanda");
-            close(client_fd);
-            deletePlayer(nickname);
-            pthread_exit(NULL);
-        }
-        
-        //il messaggio che riceve è per indicare se il client ha normalmente risposto o richiesto schowscore o endquiz
-        //per valutarlo sfrutta la funzione checkCommand
-        char msg[MSG_LEN];
-        if(recvAllBytes(client_fd,msg,MSG_LEN) <= 0) {
-            printf("Disconnessione del client o errore.\n");
-            deletePlayer(nickname);
-            close(client_fd);
-            pthread_exit(NULL);
-        }
-        //se checkCommand torna true vuol dire che è stata fatta una show score invece di rispondere
-        //quindi va ripetuta la domanda precedente, per farlo decremento i
-        int command = checkCommand(client_fd,msg); 
-        if( command == 1) {
-            i--;
-            continue;
-        } else if(command == -1) {
-            return;
-        }
-          
-        //RICEZIONE DELLA RISPOSTA E VALUTAZIONE DI ESSA  
-        
-        //riceve la risposta (sempre ricevendo prima il numero di byte)    
-        uint32_t len = recvStringLen(client_fd);
-        char* bufR = malloc(len);
-        //gestione errore nel malloc
-        if(bufR == NULL) {
-            printf("Errore nel malloc della risposta\n");
-            deletePlayer(nickname);
-            close(client_fd);
-            pthread_exit(NULL); 
-        }        
-        
-        if(recvAllBytes(client_fd,bufR,len) <= 0) {
-            printf("Disconnessione del client o errore.\n");
-            deletePlayer(nickname);
-            close(client_fd);
-            pthread_exit(NULL);
-        }
-        
-        //calcolo punteggio
-        int p = updatePoints(i,bufR,themeChosen,nickname);
-        
-        //manda feedback sulla risposta data al client
-        //p = 1 se la risposta è giusta
-        if(p == 1) {   
-            //messaggio corretta al client
-            if(sendAllBytes(client_fd, MSG_OK, MSG_LEN) <= 0) {
-                perror("Errore in send() del risposta corretta");
-                close(client_fd);
-                deletePlayer(nickname);
-                pthread_exit(NULL);
-            }    
-        }
-        else {
-            //messaggio non corretta al client
-            if(sendAllBytes(client_fd, MSG_NO, MSG_LEN) <= 0) {
-                perror("Errore in send() del risposta errata");
-                close(client_fd);
-                deletePlayer(nickname);
-                pthread_exit(NULL);
-            } 
-        }  
-        
-        //libera la memoria
-        free(bufR);
-        
-    }//chiude for
-    
-    //se arriva a questo punto il quiz è stato completato 
-    //aggiorna la struttura dati corispondente in current_session
-    pthread_mutex_lock(&lockPlayers);
-    
-    getPlayer(current_session.players,nickname)->themeCompleted[themeChosen] = true;
-    
-    pthread_mutex_unlock(&lockPlayers);
-}*/
-
-//-------------------------------------------------------------------------------------------------------------
-
 //funzione che data una risposta torna 1 se è giusta o 0 altrimenti 
 //aggiornando il punteggio nella relativa struttura dati di current_session
 //parametri: numero della domanda (numq), risposta data (bufR), indice del tema scelto, nickname del giocatore
@@ -416,21 +321,6 @@ int doShowScore(struct ClientInfo* client) {
 
 //funzione che gestisce il comando endquiz chiamato dal client
 int doEndquiz(struct ClientInfo* client) {
-    /*//riceve dal client il nickname per poter cancellare le relative informazioni  
-    uint32_t len = recvStringLen(client->client_fd);
-    char* nickname = malloc(len);
-    //gestione errore nel malloc
-    if(nickname == NULL) {
-        perror("Errore nel malloc del nickname nell'endquiz\n");
-        deletePlayer(client->nickname);
-        return -1;//gestito in manageClientGame
-    }
-    
-    if(recvAllBytes(client->client_fd,nickname,len) <= 0) {
-        printf("Disconnessione del client o errore.\n");
-        deletePlayer(client->nickname);
-        return -1;//gestito in manageClientGame
-    }*/ //da cancellare
     //deve eliminare il player da current_session
     deletePlayer(client->nickname);
     
@@ -441,7 +331,6 @@ int doEndquiz(struct ClientInfo* client) {
     client->isResponding = false;
     client->state = WaitingForNickname;
     return 1;
-      
 }
 
 //-------------------------------------------------------------------------------------------------------------
