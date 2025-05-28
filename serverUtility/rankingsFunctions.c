@@ -53,7 +53,7 @@ struct Player** getThemeRankings(int client_fd) {
             return NULL;
         }
         score_bins_tails[i] = (struct Player**)malloc((NUM_Q+1) * sizeof(struct Player*));
-        if(score_bins[i] == NULL) {
+        if(score_bins_tails[i] == NULL) {
             //errore nel malloc 
             perror("errore nel malloc");
             free(rankings);//libera memoria

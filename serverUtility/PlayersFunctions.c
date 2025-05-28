@@ -130,7 +130,7 @@ struct Player* copyPlayer(struct Player* current_player,int index_theme,int clie
         return NULL;
     }
    
-    player_copy->nickname = malloc(strlen(current_player->nickname));
+    player_copy->nickname = malloc(strlen(current_player->nickname)+1);
     if(player_copy->nickname == NULL) {
         //errore nel malloc 
         perror("errore nel malloc");

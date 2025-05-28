@@ -18,9 +18,9 @@ int updatePoints(int numq,char* bufR,int themeChosen,char* nickname) ;
 int checkCommand(struct ClientInfo* client,char* msg);
 int doShowScore(struct ClientInfo* client) ;
 int doEndquiz(struct ClientInfo* client);
-uint32_t recvAllBytes(int client_fd, void *buf, uint32_t len);
-uint32_t sendAllBytes(int client_fd, void *buf, uint32_t len);
-uint32_t recvStringLen(int client_fd);
+int recvAllBytes(int client_fd, void *buf, uint32_t len);
+int sendAllBytes(int client_fd, void *buf, uint32_t len);
+int recvStringLen(int client_fd);
 int sendString(int client_fd, void *buf);
 
 #endif

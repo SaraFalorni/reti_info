@@ -13,6 +13,8 @@
 #include <stdint.h>
 #include <sys/select.h>
 #include <sys/time.h>
+#include <errno.h>
+#include <fcntl.h>
 
 #define MAXCHAR_LINE 1024
 #define MAXCHAR_NICKNAME 20

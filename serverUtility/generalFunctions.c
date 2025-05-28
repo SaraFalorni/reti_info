@@ -122,6 +122,11 @@ void removeClientFromSet(int n,struct ClientSet* set) {
         if(set->clients[j].nickname == NULL) {
             //errore nel malloc
             perror("errore nel malloc");
+            close(set->clients[j].client_fd);
+
+            set->clients[j].client_fd = -1;
+            set->numClients--;
+            continue;
 
         }
         strcpy(set->clients[j].nickname,set->clients[j+1].nickname);
@@ -158,21 +163,28 @@ void* clientHandler(void* arg) {
 
         //timeout
         struct timeval timeout;
-        timeout.tv_sec = 1;
-        timeout.tv_usec = 0;
+        timeout.tv_sec = 0;
+        timeout.tv_usec = 500000;// 0.5 secondi
 
         if(select(fdmax+1,&read_fds, NULL,NULL,&timeout) == -1) {
             perror("errore nel select");
             continue;
         }
-
+        printf("num clients: %d\n", set->numClients); //cancellare
         for(int i = 0 ; i < set->numClients; i++) {
-            int fd = set->clients[i].client_fd;
+            printf("client[%d] : %d nickname : %s\n", i, set->clients[i].client_fd, set->clients[i].nickname ? set->clients[i].nickname : "NULL"); //cancellare
 
-            if(FD_ISSET(fd, &read_fds)) {
+            int fd = set->clients[i].client_fd;
+            //se il client deve inviare qualcosa entra in manageClientGame
+            //se il client è in attesa di un messaggio dal server entra comunque in manageClientGame
+            //caso 1: aspetta numero e nomi dei temi
+            //caso 2: aspetta una domanda del quiz
+
+            if(FD_ISSET(fd, &read_fds) ||
+                ((set->clients[i].state == WaitingForTheme || set->clients[i].state == PlayingQuiz) && set->clients[i].isResponding == false )) {
 
                 //gestione del client
-                if(manageClientGame(&set->clients[i]) <= 0) {
+                if(manageClientGame(&set->clients[i]) < 0) {
                     //in caso di errore
                     close(fd);
                     FD_CLR(fd,&master); //elimina il client disocnesso dal set di client
@@ -192,7 +204,7 @@ void* clientHandler(void* arg) {
             //se il client è in attesa di un messaggio dal server entra comunque in manageClientGame
             //caso 1: aspetta numero e nomi dei temi
             //caso 2: aspetta una domanda del quiz
-            else if ( (set->clients[i].state == WaitingForTheme && set->clients[i].isResponding == false) ||
+            /*else if ( (set->clients[i].state == WaitingForTheme && set->clients[i].isResponding == false) ||
                        (set->clients[i].state == PlayingQuiz && set->clients[i].isResponding == false ) ) {
                 //invio gestito in manageClientGame
                 if(manageClientGame(&set->clients[i]) <= 0) {
@@ -210,7 +222,7 @@ void* clientHandler(void* arg) {
                             fdmax = set->clients[j].client_fd;
                     }
                 }
-            }
+            }*/
         }
         
     }
@@ -224,8 +236,11 @@ void* clientHandler(void* arg) {
 int handleWaitingForNickname(struct ClientInfo* client) {
     //il primo msg che riceve è il nickname
     char nickname[MAXCHAR_NICKNAME];
-    if(getNickname(client->client_fd,nickname) == -1)//gestisce la recezione del nickname e registra il nuovo player
+    int res = getNickname(client->client_fd,nickname);
+    if( res == -1)//gestisce la recezione del nickname e registra il nuovo player
         return -1; 
+    else if(res == 0)
+        return 0;
     //inserisce il nickname nel ClientInfo
     client->nickname = malloc(strlen(nickname)+1);
     if(client->nickname == NULL) {
@@ -256,8 +271,11 @@ int handleWaitingForNickname(struct ClientInfo* client) {
 int handleWaitingForTheme(struct ClientInfo* client) {
     if(client->isResponding == false) {
         //se isResponding è false nello stato WaitingForTheme vuol dire che deve ancora ricevere i temi
-        if(sendThemes(client->client_fd, client->nickname) == -1)
+        int res = sendThemes(client->client_fd, client->nickname);
+        if( res == -1)
             return -1;
+        else if(res == 0)
+            return 0;
         client->isResponding = true;
     }
     else {
@@ -276,16 +294,21 @@ int handleWaitingForTheme(struct ClientInfo* client) {
 //-------------------------------------------------------------------------------------------------------------
 int handlePlayingQuiz(struct ClientInfo* client) {
     if(client->isResponding == false) {
-        if(sendQuestion(client) == -1)
+        int res = sendQuestion(client);
+        if(res == -1)
             return -1;
+        else if(res == 0)
+            return 0;
         client->isResponding = true; 
     }
     else {
     //se isResponding è true nello stato PlayingQuiz 
     //deve controllare se è una risposta o un altro comando (show score, endquiz)
-        if(recvCommand(client) == -1)
+        int res = recvCommand(client);
+        if( res == -1)
             return -1; 
-
+        else if(res == 0)
+            return 0;
         client->isResponding = false;
 
         //controllo se è concluso il quiz o meno
@@ -315,18 +338,27 @@ int handlePlayingQuiz(struct ClientInfo* client) {
 int manageClientGame(struct ClientInfo* client) {
     switch(client->state) {
         case WaitingForNickname:
-            if(handleWaitingForNickname(client) == -1)
-                return -1;//gestito in ClientHandler    
+            int res1 = handleWaitingForNickname(client);
+            if( res1 == -1)
+                return -1;//gestito in ClientHandler 
+            else if(res1 == 0)
+                return 0;   
         break;
 
         case WaitingForTheme:
-            if(handleWaitingForTheme(client) == -1)
+            int res2 = handleWaitingForTheme(client);
+            if(res2 == -1)
                 return -1;
+            else if(res2 == 0)
+                return 0; 
         break;
 
         case PlayingQuiz:
-            if(handlePlayingQuiz(client) == -1)
+            int res3 = handlePlayingQuiz(client);
+            if(res3 == -1)
                 return -1;
+            else if(res3 == 0)
+                return 0; 
         break;
     }
     return 1;
@@ -393,6 +425,12 @@ void initThemePrompt(int numTheme) {
         strcpy(Abuf,lineBuf); 
         getAnswerFromLine(Abuf);//risposte giuste separate da "|"
         int numA = getNumAnswers(Abuf);
+        if(numA == -1) {
+            //errore nel malloc all'interno della funzione getNumAnswers
+            perror("errore nel malloc");
+            exit(EXIT_FAILURE);
+        }
+
         current_session.availableThemes[numTheme].quiz[numPrompt].numAnswers = numA; //ritorna il numero di risposte giuste presenti
         current_session.availableThemes[numTheme].quiz[numPrompt].answer = malloc(numA * sizeof(char*));
         if(current_session.availableThemes[numTheme].quiz[numPrompt].answer == NULL) {

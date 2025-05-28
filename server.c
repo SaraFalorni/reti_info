@@ -61,6 +61,18 @@ int main(int argc, char *argv[]) {
             continue;
         }
 
+        int f = fcntl(*client_fd, F_GETFL, 0);
+        if( f == -1) {
+            perror("errore nell'ottenimento dei flag");
+            close(*client_fd);
+            exit(EXIT_FAILURE);
+        }
+        if(fcntl(*client_fd, F_GETFL, f | O_NONBLOCK) == -1) {
+            perror("errore nell'ottenimento dei flag");
+            close(*client_fd);
+            exit(EXIT_FAILURE);
+        }
+
         //assegna il client all'ultimo set creato non ancora pieno
         //ritorna true se c'è un posto libero, false altrimenti
         if(!assignClientToSet(*client_fd,sets,&numSets)) {

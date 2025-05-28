@@ -13,7 +13,6 @@ int main(int argc, char *argv[]) {
     char *server_ip = "127.0.0.1";
 
     if(argc != 2) {
-        //qualche printf che spieghi
         exit(EXIT_FAILURE);
     }
 
