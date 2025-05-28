@@ -181,7 +181,7 @@ void* clientHandler(void* arg) {
             //caso 2: aspetta una domanda del quiz
 
             if(FD_ISSET(fd, &read_fds) ||
-                ((set->clients[i].state == WaitingForTheme || set->clients[i].state == PlayingQuiz) && set->clients[i].isResponding == false )) {
+                ((set->clients[i].state == WaitingForTheme || set->clients[i].state == PlayingQuiz || set->clients[i].state == WaitingForNickname) && set->clients[i].isResponding == false )) {
 
                 //gestione del client
                 if(manageClientGame(&set->clients[i]) < 0) {

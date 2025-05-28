@@ -222,7 +222,7 @@ int recvResponse(struct ClientInfo* client) {
         deletePlayer(client->nickname);
         return -1;//gestito in manageClientGame
     }
-    else   
+    else if( bytesRec ==  0)   
         return 0; //socket non pronto, gestito in manageClientGame
     
     //calcolo punteggio
