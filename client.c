@@ -16,26 +16,6 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    if((client_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-        perror("Errore nella creazione del socket");
-        exit(EXIT_FAILURE);
-    }
-
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(atoi(argv[1]));
-
-    if(inet_pton(AF_INET, server_ip, &server_addr.sin_addr) <= 0) {
-        perror("Errore nella conversione dell'indirizzo IP");
-        close(client_fd);
-        exit(EXIT_FAILURE);
-    }
-
-    if(connect(client_fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1) {
-        perror("Errore nella connessione al server");
-        close(client_fd);
-        exit(EXIT_FAILURE);
-    }
-    
     char nickname[MAXCHAR_NICKNAME] = "";
     
     
@@ -44,6 +24,26 @@ int main(int argc, char *argv[]) {
         int choice = showMainMenu(client_fd,nickname);//1 se vuole giocare, 2 se vuole uscire
         
         if(choice == 1) {
+          if((client_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+            perror("Errore nella creazione del socket");
+            exit(EXIT_FAILURE);
+          }
+      
+          server_addr.sin_family = AF_INET;
+          server_addr.sin_port = htons(atoi(argv[1]));
+      
+          if(inet_pton(AF_INET, server_ip, &server_addr.sin_addr) <= 0) {
+              perror("Errore nella conversione dell'indirizzo IP");
+              close(client_fd);
+              exit(EXIT_FAILURE);
+          }
+      
+          if(connect(client_fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1) {
+              perror("Errore nella connessione al server");
+              close(client_fd);
+              exit(EXIT_FAILURE);
+          }
+
           chooseNickname(client_fd,nickname);
           while(strlen(nickname) > 0)
           {

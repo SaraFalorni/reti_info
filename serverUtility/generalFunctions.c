@@ -244,6 +244,11 @@ void* clientHandler(void* arg) {
                 }
             }*/
         }
+
+        //se non ci sono più client nel thread questo viene chiuso
+        if(set->numClients == 0) {
+            pthread_exit(NULL);
+        }
         
     }
     

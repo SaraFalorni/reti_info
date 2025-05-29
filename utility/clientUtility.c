@@ -351,9 +351,11 @@ uint32_t recvAllBytes(int client_fd, void *buf,uint32_t len) {
   
   while(totRec < len) {
     bytesRec = recv(client_fd,buf+totRec,len-totRec,0);
-    if(bytesRec <= 0) {
+    if(bytesRec < 0) {
         manageErrRecv(client_fd);
     }
+    else if(bytesRec == 0)
+        printf("Il server è al momento disconnesso\n");
     totRec += bytesRec;
   }
   
@@ -371,10 +373,12 @@ uint32_t recvAllBytes(int client_fd, void *buf,uint32_t len) {
     
     while(totSent < len) {
       bytesSent = send(client_fd,buf+totSent,len-totSent,0);
-      if(bytesSent <= 0) {
+      if(bytesSent < 0) {
           //gestione errore
           manageErrSend(client_fd);// in generalFunctions
       }
+      else if(bytesSent == 0)
+        printf("Il server è al momento disconnesso\n");
       totSent += bytesSent;
     }
     
