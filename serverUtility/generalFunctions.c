@@ -180,8 +180,7 @@ void* clientHandler(void* arg) {
             //caso 1: aspetta numero e nomi dei temi
             //caso 2: aspetta una domanda del quiz
 
-            if(FD_ISSET(fd, &read_fds) ||
-                ((set->clients[i].state == WaitingForTheme || set->clients[i].state == PlayingQuiz || set->clients[i].state == WaitingForNickname) && set->clients[i].isResponding == false )) {
+            if(FD_ISSET(fd, &read_fds) || set->clients[i].isResponding == false ) {
 
                 //gestione del client
                 if(manageClientGame(&set->clients[i]) < 0) {
@@ -235,19 +234,12 @@ void* clientHandler(void* arg) {
 //funzione che gestisce lo stato WaitingForNickname, 
 int handleWaitingForNickname(struct ClientInfo* client) {
     //il primo msg che riceve è il nickname
-    char nickname[MAXCHAR_NICKNAME];
-    int res = getNickname(client,nickname);
+    int res = getNickname(client);
     if( res == -1)//gestisce la recezione del nickname e registra il nuovo player
         return -1; 
     else if(res == 0)
         return 0;
-    //inserisce il nickname nel ClientInfo
-    client->nickname = malloc(strlen(nickname)+1);
-    if(client->nickname == NULL) {
-        perror("errore nel malloc");
-        return -1;//gestito in ClientHandler
-    }
-    strcpy(client->nickname,nickname);
+    
     //passa allo stato WaitingForTheme
     client->state = WaitingForTheme;
 

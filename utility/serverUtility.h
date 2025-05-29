@@ -48,7 +48,7 @@ struct ClientInfo {
   char* nickname; //per fare accopiamento con il player corrispondente
   int currentTheme; //indice del tema corrente, inizializzato a -1. Fa riferimento all'indice di currentSession.availableThemes
   int currentQ; //indice della domanda corrente, inizializzato a -1. Fa riferimento all'indice di currentSession.availableThemes[currentTheme].quiz
-  bool isResponding; //se true il server sta aspettando la risposta dal client. valido solo nello stato WaitingForTheme, PlayingQuiz
+  bool isResponding; //se true il server sta aspettando la risposta dal client
   struct Buffer sendBuf;
   struct Buffer recvBuf;
   enum ClientState state; //stato in cui si trova il client 
