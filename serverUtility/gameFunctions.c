@@ -220,7 +220,7 @@ int recvThemes(struct ClientInfo* client, char* nickname) {
     }
     else if(bytesRec == 0)
         return 0; //client non pronto, gestito in ManageClient
-    return themeChosen;
+    return themeChosen+1;
 }
 
 //-------------------------------------------------------------------------------------------------------------
@@ -613,21 +613,15 @@ int sendString(struct ClientInfo* client, void *buf) {
     uint32_t len = (uint32_t)strlen(buf)+1;
     uint32_t netLen = htonl(len); //host to network
 
-    char* bufToSend = malloc(netLen + sizeof(uint32_t));
-    if(bufToSend == NULL) {
-        return -1;
-    }
+    int lenSent = sendAllBytes(client,&netLen,sizeof(uint32_t));//manda la lunghezza della stringa
+    if(lenSent <= 0)
+        return lenSent; //errore o invio non finito
 
-    //nel buffer ci scrive sia la lunghezza che la stringa
-    memcpy(client->sendBuf.buffer, &netLen, sizeof(uint32_t));//lunghezza della stringa
-    memcpy(client->sendBuf.buffer + sizeof(uint32_t), buf, netLen);//stringa stessa
-        
-    int lenSent = sendAllBytes(client,bufToSend,netLen+ sizeof(uint32_t));//manda la lunghezza della stringa
-
-    if(lenSent < 0)
-        return -1;
-    else if(lenSent == 0)
-        return 0;
+    //se arriva a questo punto la lunghezza è stata inviata completamente e correttamente
+    //invia stringa
+    lenSent = sendAllBytes(client,buf,len);//manda la lunghezza della stringa
+    if(lenSent <= 0)
+        return lenSent; //errore o invio non finito
     
     return 1;
 

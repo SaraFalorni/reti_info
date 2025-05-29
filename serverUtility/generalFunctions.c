@@ -269,19 +269,18 @@ int handleWaitingForTheme(struct ClientInfo* client) {
     if(client->isResponding == false) {
         //se isResponding è false nello stato WaitingForTheme vuol dire che deve ancora ricevere i temi
         int res = sendThemes(client, client->nickname);
-        if( res == -1)
-            return -1;
-        else if(res == 0)
-            return 0;
+        if( res <= 0)
+            return res;
         client->isResponding = true;
     }
     else {
         //se isResponding è true nello stato WaitingForTheme vuol dire che ha già ricevuto i temi
-        client->currentTheme = recvThemes(client, client->nickname);
+        int theme = recvThemes(client, client->nickname);
         //controllo che il tema scelto sia accettabile
-        if(client->currentTheme == -1) {
-            return -1;//errore gestito a livello di clientHandler
+        if(theme <= 0) {
+            return theme;//errore gestito a livello di clientHandler
         }
+        client->currentTheme = theme-1;
         client->currentQ = 0;
         client->isResponding = false;
         client->state = PlayingQuiz;
@@ -292,20 +291,16 @@ int handleWaitingForTheme(struct ClientInfo* client) {
 int handlePlayingQuiz(struct ClientInfo* client) {
     if(client->isResponding == false) {
         int res = sendQuestion(client);
-        if(res == -1)
-            return -1;
-        else if(res == 0)
-            return 0;
+        if(res <= 0 )
+            return res;
         client->isResponding = true; 
     }
     else {
     //se isResponding è true nello stato PlayingQuiz 
     //deve controllare se è una risposta o un altro comando (show score, endquiz)
         int res = recvCommand(client);
-        if( res == -1)
-            return -1; 
-        else if(res == 0)
-            return 0;
+        if( res <= 0)
+            return res; 
         client->isResponding = false;
 
         //controllo se è concluso il quiz o meno
