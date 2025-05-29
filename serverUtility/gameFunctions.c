@@ -32,6 +32,7 @@ int getNickname(struct ClientInfo* client) {
         printf("entra in getNickname isResponding %d\n",client->isResponding);//cancellare
         //ricezione lunghezza stringa
         uint32_t netLen = 0;
+        printf("prima della ricezione lunghezza\n"); //cancellare
         int lenRecv = recvAllBytes(client,&netLen,sizeof(uint32_t));//riceve la lunghezza della stringa
         if(lenRecv <= 0) 
             return lenRecv; //socket non ancora pronto o errore

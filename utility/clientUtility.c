@@ -58,7 +58,6 @@ void chooseNickname(int client_fd,char* nickname) {
             perror("Errore in send() del nickname");
             exit(EXIT_FAILURE);
         }
-        
         //ricezione risposta del server
         if(recvAllBytes(client_fd, msg, MSG_LEN) <= 0) { 
             perror("Errore in recv() di conferma nickname");
@@ -69,7 +68,7 @@ void chooseNickname(int client_fd,char* nickname) {
         if(strcmp(msg,MSG_OK) == 0) {
             break;
         }
-        else //nickname già in uso, continua il ciclo 
+        else if(strcmp(msg,MSG_NO) == 0)//nickname già in uso, continua il ciclo 
            printf("\nNickname già utilizzato\n");
     }
 }
@@ -375,7 +374,7 @@ uint32_t recvAllBytes(int client_fd, void *buf,uint32_t len) {
       bytesSent = send(client_fd,buf+totSent,len-totSent,0);
       if(bytesSent <= 0) {
           //gestione errore
-          manageErr(client_fd);// in generalFunctions
+          manageErr(client_fd);
       }
       
       totSent += bytesSent;

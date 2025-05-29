@@ -66,10 +66,45 @@ bool assignClientToSet(int client_fd, struct ClientSet* sets, int* numSets) {
             sets[i].clients[sets[i].numClients].state = WaitingForNickname;
             sets[i].clients[sets[i].numClients].isResponding = true;//il primo messaggio è il nickname, inviato dal client
             sets[i].FDUpdateNeeded = true; //perchè si è aggiunto un client
+            sets[i].clients[sets[i].numClients].recvBuf.progress = 0;
+            sets[i].clients[sets[i].numClients].recvBuf.buffer = NULL;
+            sets[i].clients[sets[i].numClients].recvBuf.totLen = 0;
+            sets[i].clients[sets[i].numClients].sendBuf.progress = 0;
+            sets[i].clients[sets[i].numClients].sendBuf.buffer = NULL;
+            sets[i].clients[sets[i].numClients].sendBuf.totLen = 0;
             sets[i].numClients++;
             pthread_mutex_unlock(&lockSets);
             return true;
         }
+
+        //caso in cui un thread morto sia disponibile
+        if(sets[i].numClients == 0) {
+            sets[i].numClients = 1;
+             //inserisce il client come primo client del nuovo set
+            sets[i].clients[0].client_fd = client_fd;
+            sets[i].clients[0].nickname = NULL;
+            sets[i].clients[0].currentTheme = -1;
+            sets[i].clients[0].currentQ = -1;
+            sets[i].clients[0].state = WaitingForNickname;
+            sets[i].clients[0].isResponding = true;//il primo messaggio è il nickname, inviato dal client
+            sets[i].FDUpdateNeeded = true; //perchè si è aggiunto un client
+            sets[i].clients[0].recvBuf.progress = 0;
+            sets[i].clients[0].recvBuf.buffer = NULL;
+            sets[i].clients[0].recvBuf.totLen = 0;
+            sets[i].clients[0].sendBuf.progress = 0;
+            sets[i].clients[0].sendBuf.buffer = NULL;
+            sets[i].clients[0].sendBuf.totLen = 0;
+            pthread_mutex_unlock(&lockSets);
+
+            if(pthread_create(&sets[i].thread, NULL, clientHandler, &sets[i]) != 0) {
+                perror("Errore nella creazione del thread");
+                close(client_fd);
+                return false;
+            }
+    
+            return true;
+        }
+
         //se non c'è posto controlla il set successivo
     }
 
@@ -91,6 +126,12 @@ bool assignClientToSet(int client_fd, struct ClientSet* sets, int* numSets) {
         sets[setIndex].clients[0].state = WaitingForNickname;
         sets[setIndex].clients[0].isResponding = true;//il primo messaggio è il nickname, inviato dal client
         sets[setIndex].FDUpdateNeeded = true; //perchè si è aggiunto un client
+        sets[setIndex].clients[0].recvBuf.progress = 0;
+        sets[setIndex].clients[0].recvBuf.buffer = NULL;
+        sets[setIndex].clients[0].recvBuf.totLen = 0;
+        sets[setIndex].clients[0].sendBuf.progress = 0;
+        sets[setIndex].clients[0].sendBuf.buffer = NULL;
+        sets[setIndex].clients[0].sendBuf.totLen = 0;
         pthread_mutex_unlock(&lockSets);
         printf("is responding %d\n",sets[setIndex].clients[0].isResponding); //cancellare
 
@@ -176,7 +217,6 @@ void* clientHandler(void* arg) {
     while(1) {
         printf("altro ciclo di while\n");
         if(set->FDUpdateNeeded == true) {
-            pthread_mutex_lock(&lockSets);
             //inizializzazione master con i client presenti nel set
             FD_ZERO(&master);
             fdmax = -1;
@@ -187,7 +227,6 @@ void* clientHandler(void* arg) {
                     fdmax = fd;
             }
             set->FDUpdateNeeded = false; //aggiornamento set fatto
-            pthread_mutex_unlock(&lockSets);
         }
         read_fds = master;
         //timeout
@@ -228,29 +267,6 @@ void* clientHandler(void* arg) {
                     }
                 }
             }
-
-            //se il client è in attesa di un messaggio dal server entra comunque in manageClientGame
-            //caso 1: aspetta numero e nomi dei temi cancellare
-            //caso 2: aspetta una domanda del quiz
-            /*else if ( (set->clients[i].state == WaitingForTheme && set->clients[i].isResponding == false) ||
-                       (set->clients[i].state == PlayingQuiz && set->clients[i].isResponding == false ) ) {
-                //invio gestito in manageClientGame
-                if(manageClientGame(&set->clients[i]) <= 0) {
-                    //in caso di errore
-                    close(fd);
-                    FD_CLR(fd,&master); //elimina il client disocnesso dal set di client
-
-                    removeClientFromSet(i,set);//elimina i esimo client dal set
-                    i--;
-
-                    //aggiorna fdmax
-                    fdmax = -1;
-                    for(int j = 0; j < set->numClients; j++) {
-                        if(set->clients[j].client_fd > fdmax)
-                            fdmax = set->clients[j].client_fd;
-                    }
-                }
-            }*/
         }
 
         //se non ci sono più client nel thread questo viene chiuso
