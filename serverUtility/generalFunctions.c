@@ -263,7 +263,7 @@ int handleWaitingForNickname(struct ClientInfo* client) {
 int handleWaitingForTheme(struct ClientInfo* client) {
     if(client->isResponding == false) {
         //se isResponding è false nello stato WaitingForTheme vuol dire che deve ancora ricevere i temi
-        int res = sendThemes(client->client_fd, client->nickname);
+        int res = sendThemes(client, client->nickname);
         if( res == -1)
             return -1;
         else if(res == 0)
@@ -272,7 +272,7 @@ int handleWaitingForTheme(struct ClientInfo* client) {
     }
     else {
         //se isResponding è true nello stato WaitingForTheme vuol dire che ha già ricevuto i temi
-        client->currentTheme = recvThemes(client->client_fd, client->nickname);
+        client->currentTheme = recvThemes(client, client->nickname);
         //controllo che il tema scelto sia accettabile
         if(client->currentTheme == -1) {
             return -1;//errore gestito a livello di clientHandler

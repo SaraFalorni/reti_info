@@ -10,7 +10,7 @@
 
 int getNickname(struct ClientInfo* client);
 int sendThemes(struct ClientInfo* client, char* nickname) ;
-int recvThemes(int client_fd, char* nickname);
+int recvThemes(struct ClientInfo* client, char* nickname);
 int sendQuestion(struct ClientInfo* client);
 int recvCommand(struct ClientInfo* client);
 int recvResponse(struct ClientInfo* client);
