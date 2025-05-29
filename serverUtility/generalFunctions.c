@@ -4,6 +4,8 @@
 
 //inizializzazione mutex per players
 pthread_mutex_t lockPlayers = PTHREAD_MUTEX_INITIALIZER;
+//inizializzazione mutex per sets
+pthread_mutex_t lockSets = PTHREAD_MUTEX_INITIALIZER;
 //inizializzazione della uova sessione di gioco
 struct Session current_session; 
 
@@ -51,6 +53,7 @@ void showOverview() {
 //-------------------------------------------------------------------------------------------------------------
 //funzione che controlla se c'è un posto disponibile in un set già creato altrimenti lo crea
 bool assignClientToSet(int client_fd, struct ClientSet* sets, int* numSets) {
+    pthread_mutex_lock(&lockSets);
     for(int i = 0; i < (*numSets) ; i++) {
         //se c'è un thread già creato con spazio libero il client viene inserito li
         //nel caso che sia il primo set a essere inizializzato devo comunque entrare nell'if successivo
@@ -64,6 +67,7 @@ bool assignClientToSet(int client_fd, struct ClientSet* sets, int* numSets) {
             sets[i].clients[sets[i].numClients].isResponding = true;//il primo messaggio è il nickname, inviato dal client
             sets[i].FDUpdateNeeded = true; //perchè si è aggiunto un client
             sets[i].numClients++;
+            pthread_mutex_unlock(&lockSets);
             return true;
         }
         //se non c'è posto controlla il set successivo
@@ -75,29 +79,30 @@ bool assignClientToSet(int client_fd, struct ClientSet* sets, int* numSets) {
     if((*numSets) < MAX_CLIENTSETS) {
         //crea nuovo set
         //inizializzazione dei campi
-        sets[(*numSets)].numClients = 1;
+        int setIndex = *numSets;
+        (*numSets)++;
+        sets[setIndex].numClients = 1;
         
         //inserisce il client come primo client del nuovo set
-        sets[*numSets].clients[0].client_fd = client_fd;
-        sets[*numSets].clients[0].nickname = NULL;
-        sets[*numSets].clients[0].currentTheme = -1;
-        sets[*numSets].clients[0].currentQ = -1;
-        sets[*numSets].clients[0].state = WaitingForNickname;
-        sets[*numSets].clients[0].isResponding = true;//il primo messaggio è il nickname, inviato dal client
-        sets[*numSets].FDUpdateNeeded = true; //perchè si è aggiunto un client
+        sets[setIndex].clients[0].client_fd = client_fd;
+        sets[setIndex].clients[0].nickname = NULL;
+        sets[setIndex].clients[0].currentTheme = -1;
+        sets[setIndex].clients[0].currentQ = -1;
+        sets[setIndex].clients[0].state = WaitingForNickname;
+        sets[setIndex].clients[0].isResponding = true;//il primo messaggio è il nickname, inviato dal client
+        sets[setIndex].FDUpdateNeeded = true; //perchè si è aggiunto un client
 
-        if(pthread_create(&sets[(*numSets)].thread, NULL, clientHandler, &sets[(*numSets)]) != 0) {
+        if(pthread_create(&sets[setIndex].thread, NULL, clientHandler, &sets[setIndex]) != 0) {
             perror("Errore nella creazione del thread");
             close(client_fd);
+            pthread_mutex_unlock(&lockSets);
             return false;
         }
 
-
-        (*numSets)++;
-
+        pthread_mutex_unlock(&lockSets);
         return true;
     }
-
+    pthread_mutex_unlock(&lockSets);
     return false;
 }
 
@@ -111,7 +116,7 @@ void removeClientFromSet(int n,struct ClientSet* set) {
         free(set->clients[n].nickname);
         set->clients[n].nickname = NULL;
     }*/
-
+    pthread_mutex_lock(&lockSets);
     //rimuove il client dal ClientSet e compatta i client restanti
     for(int j = n; j < set->numClients-1; j++) {
         set->clients[j].client_fd = set->clients[j+1].client_fd;
@@ -143,6 +148,7 @@ void removeClientFromSet(int n,struct ClientSet* set) {
     }
     set->numClients--;
     set->FDUpdateNeeded = true; //client è stato eliminato, deve aggiornare il set per select
+    pthread_mutex_unlock(&lockSets);
 }
 
 
@@ -170,6 +176,7 @@ void* clientHandler(void* arg) {
     while(1) {
         printf("altro ciclo di while\n");
         if(set->FDUpdateNeeded == true) {
+            pthread_mutex_lock(&lockSets);
             //inizializzazione master con i client presenti nel set
             FD_ZERO(&master);
             fdmax = -1;
@@ -180,6 +187,7 @@ void* clientHandler(void* arg) {
                     fdmax = fd;
             }
             set->FDUpdateNeeded = false; //aggiornamento set fatto
+            pthread_mutex_unlock(&lockSets);
         }
         read_fds = master;
         //timeout

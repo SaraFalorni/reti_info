@@ -337,7 +337,8 @@ void endGame(int client_fd,char* nickname) {
 
 //funzione di uscita del client
 void exitGame(int client_fd) {
-    close(client_fd);
+    if(client_fd > 0)
+        close(client_fd);
     exit(EXIT_SUCCESS);
 }
 
@@ -351,11 +352,10 @@ uint32_t recvAllBytes(int client_fd, void *buf,uint32_t len) {
   
   while(totRec < len) {
     bytesRec = recv(client_fd,buf+totRec,len-totRec,0);
-    if(bytesRec < 0) {
-        manageErrRecv(client_fd);
+    if(bytesRec <= 0) {
+        manageErr(client_fd);
     }
-    else if(bytesRec == 0)
-        printf("Il server è al momento disconnesso\n");
+    
     totRec += bytesRec;
   }
   
@@ -373,12 +373,11 @@ uint32_t recvAllBytes(int client_fd, void *buf,uint32_t len) {
     
     while(totSent < len) {
       bytesSent = send(client_fd,buf+totSent,len-totSent,0);
-      if(bytesSent < 0) {
+      if(bytesSent <= 0) {
           //gestione errore
-          manageErrSend(client_fd);// in generalFunctions
+          manageErr(client_fd);// in generalFunctions
       }
-      else if(bytesSent == 0)
-        printf("Il server è al momento disconnesso\n");
+      
       totSent += bytesSent;
     }
     
@@ -448,27 +447,9 @@ void* safeMalloc(int len) {
 //-------------------------------------------------------------------------------------------------------------
 
 //funzione che gestsce errori dovuti a send o improvvise disconnessione del server
-void manageErrSend(int client_fd) {
+void manageErr(int client_fd) {
     //gestione errore
-   if(errno == ECONNRESET)
-        printf("Connessione interrotta dal server.\n");
-    else
-        perror("errore nella send");
-    
-    close(client_fd);
-    exit(EXIT_FAILURE);
-}
-
-//-------------------------------------------------------------------------------------------------------------
-
-//funzione che gestsce errori dovuti a send o improvvise disconnessione del server
-void manageErrRecv(int client_fd) {
-    //gestione errore
-    if(errno == ECONNRESET)
-        printf("Connessione interrotta dal server.\n");
-    else
-        perror("errore nella recv");
-    
+    printf("Connessione interrotta dal server.\n");    
     close(client_fd);
     exit(EXIT_FAILURE);
 }

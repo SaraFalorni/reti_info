@@ -60,7 +60,7 @@ int main(int argc, char *argv[]) {
             perror("Errore nell'accettazione della connessione");
             continue;
         }
-
+        //socket non bloccanti
         int f = fcntl(*client_fd, F_GETFL, 0);
         if( f == -1) {
             perror("errore nell'ottenimento dei flag");
