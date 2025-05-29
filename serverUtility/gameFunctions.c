@@ -26,10 +26,10 @@ int getNickname(struct ClientInfo* client) {
             perror("Errore nel malloc del nickname\n");
             return -1;//gestito in manageClientGame
         }*/
-
+    
     if(client->isResponding == true) {
         //caso in cui il client non ha ancora inserito un nickname valido
-        
+        printf("entra in getNickname isResponding %d\n",client->isResponding);//cancellare
         //ricezione lunghezza stringa
         uint32_t netLen = 0;
         int lenRecv = recvAllBytes(client,&netLen,sizeof(uint32_t));//riceve la lunghezza della stringa
@@ -37,7 +37,7 @@ int getNickname(struct ClientInfo* client) {
             return lenRecv; //socket non ancora pronto o errore
         
         uint32_t len = ntohl(netLen); //da network a host
-
+        printf("lunghezza nickname: %d\n",len);//cancellare
         char* nickname = malloc(len);
         if(nickname == NULL)
             return -1; //gestione errore propagata
@@ -45,9 +45,11 @@ int getNickname(struct ClientInfo* client) {
         //int bytesRec = recvString(client,&nickname); cancellare
         if( bytesRec <= 0) 
             return bytesRec; //-1 se c'è stato errore, 0 se socket non pronto, gestito da manageClientGame
-        
+            printf("nickname: %s\n",nickname);//cancellare
+        printf("prima di insert\n");//cancellare
         //se l'inserimento va a buon fine manda un messaggio di conferma al client, altrimenti manda un messaggio di errore e chiede nuovamente un nickname
         int insert = insertPlayer(nickname,client->client_fd);
+        printf("insert risulted: %d\n",insert);//cancellare
         if( insert == -1)
             return -1;
         else if( insert == 1) {  

@@ -52,7 +52,7 @@ void chooseNickname(int client_fd,char* nickname) {
        //prima di inviare il nickname al server toglie '\n'
         if(nickname[strlen(nickname)-1] == '\n')
             nickname[strlen(nickname)-1] = '\0';
-          
+        printf("nickname scelto %s\n",nickname); //cancellare
         //manda il nickname scelto al server che risponde con MSG_OK se è utilizzabile, MSG_NO altrimenti  
         if(sendString(client_fd, nickname) <= 0) {
             perror("Errore in send() del nickname");
@@ -64,7 +64,7 @@ void chooseNickname(int client_fd,char* nickname) {
             perror("Errore in recv() di conferma nickname");
             exit(EXIT_FAILURE);
         }
-        
+        printf("feedback %s\n",msg); //cancellare
         //nickname utilizzabile, giocatore registrato correttamento
         if(strcmp(msg,MSG_OK) == 0) {
             break;

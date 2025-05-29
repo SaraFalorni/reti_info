@@ -82,7 +82,7 @@ bool assignClientToSet(int client_fd, struct ClientSet* sets, int* numSets) {
         int setIndex = *numSets;
         (*numSets)++;
         sets[setIndex].numClients = 1;
-        
+        printf("%d %d\n", setIndex, *numSets);
         //inserisce il client come primo client del nuovo set
         sets[setIndex].clients[0].client_fd = client_fd;
         sets[setIndex].clients[0].nickname = NULL;
@@ -91,18 +91,18 @@ bool assignClientToSet(int client_fd, struct ClientSet* sets, int* numSets) {
         sets[setIndex].clients[0].state = WaitingForNickname;
         sets[setIndex].clients[0].isResponding = true;//il primo messaggio è il nickname, inviato dal client
         sets[setIndex].FDUpdateNeeded = true; //perchè si è aggiunto un client
+        pthread_mutex_unlock(&lockSets);
+        printf("is responding %d\n",sets[setIndex].clients[0].isResponding); //cancellare
 
         if(pthread_create(&sets[setIndex].thread, NULL, clientHandler, &sets[setIndex]) != 0) {
             perror("Errore nella creazione del thread");
             close(client_fd);
-            pthread_mutex_unlock(&lockSets);
             return false;
         }
 
-        pthread_mutex_unlock(&lockSets);
         return true;
     }
-    pthread_mutex_unlock(&lockSets);
+
     return false;
 }
 
@@ -210,7 +210,7 @@ void* clientHandler(void* arg) {
             //caso 2: aspetta una domanda del quiz
 
             if(FD_ISSET(fd, &read_fds) || set->clients[i].isResponding == false ) {
-
+                printf("is responding %d\n",set->clients[i].isResponding); //cancellare
                 //gestione del client
                 if(manageClientGame(&set->clients[i]) < 0) {
                     //in caso di errore
