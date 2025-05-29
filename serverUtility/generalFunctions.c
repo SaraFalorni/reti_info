@@ -57,10 +57,11 @@ bool assignClientToSet(int client_fd, struct ClientSet* sets, int* numSets) {
         if(sets[i].numClients < MAX_CLIENT_IN_THREAD) {
             //c'è posto quindi inserisce il client e ritorna true
             sets[i].clients[sets[i].numClients].client_fd = client_fd;
+            sets[i].clients[sets[i].numClients].nickname = NULL;
             sets[i].clients[sets[i].numClients].currentTheme = -1;
             sets[i].clients[sets[i].numClients].currentQ = -1;
             sets[i].clients[sets[i].numClients].state = WaitingForNickname;
-            sets[i].clients[sets[i].numClients].isResponding = false;
+            sets[i].clients[sets[i].numClients].isResponding = true;//il primo messaggio è il nickname, inviato dal client
             sets[i].numClients++;
             return true;
         }
@@ -77,10 +78,11 @@ bool assignClientToSet(int client_fd, struct ClientSet* sets, int* numSets) {
         
         //inserisce il client come primo client del nuovo set
         sets[*numSets].clients[0].client_fd = client_fd;
+        sets[*numSets].clients[0].nickname = NULL;
         sets[*numSets].clients[0].currentTheme = -1;
         sets[*numSets].clients[0].currentQ = -1;
         sets[*numSets].clients[0].state = WaitingForNickname;
-        sets[*numSets].clients[0].isResponding = false;
+        sets[*numSets].clients[0].isResponding = true;//il primo messaggio è il nickname, inviato dal client
 
         if(pthread_create(&sets[(*numSets)].thread, NULL, clientHandler, &sets[(*numSets)]) != 0) {
             perror("Errore nella creazione del thread");
@@ -235,13 +237,15 @@ void* clientHandler(void* arg) {
 int handleWaitingForNickname(struct ClientInfo* client) {
     //il primo msg che riceve è il nickname
     int res = getNickname(client);
-    if( res == -1)//gestisce la recezione del nickname e registra il nuovo player
-        return -1; 
-    else if(res == 0)
+    if( res <= 0)//gestisce la recezione del nickname e registra il nuovo player
+        return res; 
+    if(client->nickname == NULL)
+        //nel caso in cui getNickanme non sia andato a buon fine client->nickname non è inizializzato e quindi non può procedere con il flusso di gioco
         return 0;
-    
-    //passa allo stato WaitingForTheme
+
+    //nickname acquisito, passa allo stato WaitingForTheme
     client->state = WaitingForTheme;
+    client->isResponding = false;
 
     //a questo punto il nuovo player è stato registrato, vengono mostrate al server le classifiche e chi ha completato i quiz
     struct Player** rankings = getThemeRankings(client->client_fd);
@@ -261,6 +265,7 @@ int handleWaitingForNickname(struct ClientInfo* client) {
 
 //funzione che gestisce lo stato WaitingForTheme
 int handleWaitingForTheme(struct ClientInfo* client) {
+    printf("entra in handleWaitingForThemes\n");//cancellare
     if(client->isResponding == false) {
         //se isResponding è false nello stato WaitingForTheme vuol dire che deve ancora ricevere i temi
         int res = sendThemes(client, client->nickname);

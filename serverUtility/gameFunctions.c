@@ -47,7 +47,10 @@ int getNickname(struct ClientInfo* client) {
             return bytesRec; //-1 se c'è stato errore, 0 se socket non pronto, gestito da manageClientGame
         
         //se l'inserimento va a buon fine manda un messaggio di conferma al client, altrimenti manda un messaggio di errore e chiede nuovamente un nickname
-        if(insertPlayer(nickname,client->client_fd) == 1) {  
+        int insert = insertPlayer(nickname,client->client_fd);
+        if( insert == -1)
+            return -1;
+        else if( insert == 1) {  
             //inserisce il nickname nel ClientInfo
             client->nickname = malloc(strlen(nickname)+1);
             if(client->nickname == NULL) {
@@ -64,7 +67,7 @@ int getNickname(struct ClientInfo* client) {
             //scrive nel buffer send del client
             client->sendBuf.totLen = MSG_LEN;
             client->sendBuf.buffer = malloc(MSG_LEN+1);
-            if(client->sendBuf.buffer)
+            if(client->sendBuf.buffer == NULL)
                 //gestione errore propagata
                 return -1; 
             strcpy(client->sendBuf.buffer,MSG_OK);
@@ -78,7 +81,7 @@ int getNickname(struct ClientInfo* client) {
                                     return 0; //socket non pronto, gestito in manageClientGame  */ 
                             // break;//esce dal while solo dopo un inserimento avvenuto con successo cancellare
         }
-        else {
+        else if( insert == 0){
             client->isResponding = false; //il nickname è stato ricevuto dal client, passa alla fase di conferma/rifiuto
             //prepara l'invio del messaggio di non ok a client
             //scrive nel buffer send del client
@@ -108,7 +111,6 @@ int getNickname(struct ClientInfo* client) {
         return bytesSent;
 
     //}       
-   
     return 1;//conclusa correttamente
 }
 //-------------------------------------------------------------------------------------------------------------
@@ -118,7 +120,7 @@ int getNickname(struct ClientInfo* client) {
 //il nickname serve per un'eventuale endquiz durante il gioco
 int sendThemes(struct ClientInfo* client, char* nickname) {
     //manda un messaggio al client con il numero di temi e aspetta un feedback sulla ricezione di quest'ultimo
-    
+    printf("in sendThemes prima del send\n");// cancellare
     //manda il numero dei temi al client
     int bytesSent = sendAllBytes(client, &current_session.numThemes, sizeof(current_session.numThemes));
     if( bytesSent < 0) {
@@ -128,7 +130,7 @@ int sendThemes(struct ClientInfo* client, char* nickname) {
     }
     else if(bytesSent == 0)
         return 0;
-    
+    printf("in sendThemes dopo prima send\n");// cancellare
     //il numero dei temi è stato ricevuto correttamente prosegue mandando il nome di ogni tema, uno per volta         
       for(int i = 0; i < NUM_THEMES ; i++) {
         //controllo se il giocatore ha già giocato l'i-esimo tema
@@ -137,7 +139,7 @@ int sendThemes(struct ClientInfo* client, char* nickname) {
         pthread_mutex_lock(&lockPlayers);
         
         struct Player* ptr = getPlayer(current_session.players,nickname);
-        
+        printf("getPlayer controllo temi\n");// cancellare
         //unlock mutex
         pthread_mutex_unlock(&lockPlayers);
         char* buf;//buffer ausiliaro che contiene la stringa da inviare al client
@@ -184,7 +186,7 @@ int sendThemes(struct ClientInfo* client, char* nickname) {
             else if (bytesSent == 0)
                 return 0;*/ 
         }
-
+        printf("in sendThemes dopo prima send %s\n",buf);// cancellare
         //invio della stringa buf
         int bytesSent = sendString(client,buf);
         if( bytesSent < 0) { //invio della stringa (nome dell'i-esimo tema)
@@ -194,9 +196,9 @@ int sendThemes(struct ClientInfo* client, char* nickname) {
         }
         else if (bytesSent == 0)
             return 0;
-        
+        printf("in sendThemes dopo send %s\n", buf);// cancellare
      } 
-  
+     printf("in sendThemes fine\n");// cancellare
      return 1;//conclusa correttamente
 }
 
@@ -510,7 +512,7 @@ int recvAllBytes(struct ClientInfo* client, void *buf, uint32_t len) {
     }
 
     //se è uscito dal while vuol dire che la ricezione è completa
-    strcpy(buf, client->sendBuf.buffer);//copio in buf quanto ricevuto
+    memcpy(buf, client->recvBuf.buffer,client->recvBuf.totLen);//copio in buf quanto ricevuto
     //resetta i campi di recvBuf
     free(client->recvBuf.buffer);
     client->recvBuf.buffer = NULL;

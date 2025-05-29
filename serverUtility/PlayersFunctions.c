@@ -16,7 +16,7 @@ struct Player* findLastPlayer(struct Player* p) {
 //-------------------------------------------------------------------------------------------------------------
 
 //funzione che inserisce un nuovo giocatore con il nickname passato come parametro
-//ritorna true se l'inserimento va a buon fine, false altrimenti
+//ritorna 1 se l'inserimento va a buon fine, -1 altrimenti
 int insertPlayer(char* nickname, int client_fd) {
     //inserimento in players con mutex per evitare errori
     pthread_mutex_lock(&lockPlayers);
@@ -24,7 +24,7 @@ int insertPlayer(char* nickname, int client_fd) {
     struct Player* new_player;
     new_player = current_session.players;
 
-    //se esiste un giocatore con lo stesso nickname torna false
+    //se esiste un giocatore con lo stesso nickname torna 0
     if(getPlayer(current_session.players,nickname) != NULL) {
         pthread_mutex_unlock(&lockPlayers);
         return 0;
