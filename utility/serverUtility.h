@@ -36,6 +36,12 @@ struct Session {
   int numThemes;//numero di temi
 };
 
+struct Buffer {
+  char* buffer; //contenitore per la stringa
+  int totLen;//lunghezza totale da ricevere o mandare
+  int progress; //numero di bytes già mandati o già ricevuti
+};
+
 //informazioni utili per ricostruire lo stato del client per permettere il suo avanzamento
 struct ClientInfo {
   int client_fd; //socket, identificativo del client
@@ -43,6 +49,8 @@ struct ClientInfo {
   int currentTheme; //indice del tema corrente, inizializzato a -1. Fa riferimento all'indice di currentSession.availableThemes
   int currentQ; //indice della domanda corrente, inizializzato a -1. Fa riferimento all'indice di currentSession.availableThemes[currentTheme].quiz
   bool isResponding; //se true il server sta aspettando la risposta dal client. valido solo nello stato WaitingForTheme, PlayingQuiz
+  struct Buffer sendBuf;
+  struct Buffer recvBuf;
   enum ClientState state; //stato in cui si trova il client 
 };
 

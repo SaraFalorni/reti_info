@@ -202,7 +202,7 @@ void* clientHandler(void* arg) {
             }
 
             //se il client è in attesa di un messaggio dal server entra comunque in manageClientGame
-            //caso 1: aspetta numero e nomi dei temi
+            //caso 1: aspetta numero e nomi dei temi cancellare
             //caso 2: aspetta una domanda del quiz
             /*else if ( (set->clients[i].state == WaitingForTheme && set->clients[i].isResponding == false) ||
                        (set->clients[i].state == PlayingQuiz && set->clients[i].isResponding == false ) ) {
@@ -236,7 +236,7 @@ void* clientHandler(void* arg) {
 int handleWaitingForNickname(struct ClientInfo* client) {
     //il primo msg che riceve è il nickname
     char nickname[MAXCHAR_NICKNAME];
-    int res = getNickname(client->client_fd,nickname);
+    int res = getNickname(client,nickname);
     if( res == -1)//gestisce la recezione del nickname e registra il nuovo player
         return -1; 
     else if(res == 0)

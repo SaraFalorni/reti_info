@@ -8,8 +8,8 @@
 #include "PlayersFunctions.h"
 #include "rankingsFunctions.h"
 
-int getNickname(int client_fd, char* name);
-int sendThemes(int client_fd, char* nickname) ;
+int getNickname(struct ClientInfo* client, char* name);
+int sendThemes(struct ClientInfo* client, char* nickname) ;
 int recvThemes(int client_fd, char* nickname);
 int sendQuestion(struct ClientInfo* client);
 int recvCommand(struct ClientInfo* client);
@@ -21,6 +21,7 @@ int doEndquiz(struct ClientInfo* client);
 int recvAllBytes(int client_fd, void *buf, uint32_t len);
 int sendAllBytes(int client_fd, void *buf, uint32_t len);
 int recvStringLen(int client_fd);
-int sendString(int client_fd, void *buf);
+int sendString(struct ClientInfo* client, void *buf);
+int recvString(struct ClientInfo* client, void *buf);
 
 #endif
