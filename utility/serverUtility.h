@@ -57,6 +57,7 @@ struct ClientInfo {
 struct ClientSet {
   struct ClientInfo clients[MAX_CLIENT_IN_THREAD];
   int numClients;
+  bool FDUpdateNeeded; //se true va aggiornato l'insieme di socket per select
   pthread_t thread;
 };
 

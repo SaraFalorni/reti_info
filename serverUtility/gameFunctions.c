@@ -87,7 +87,7 @@ int getNickname(struct ClientInfo* client) {
             //scrive nel buffer send del client
             client->sendBuf.totLen = MSG_LEN;
             client->sendBuf.buffer = malloc(MSG_LEN+1);
-            if(client->sendBuf.buffer)
+            if(client->sendBuf.buffer == NULL)
                 //gestione errore propagata
                 return -1; 
             strcpy(client->sendBuf.buffer,MSG_NO);
@@ -481,11 +481,12 @@ int doEndquiz(struct ClientInfo* client) {
     
     //resetta le info di ClientInfo
     free(client->nickname);
+    client->nickname = NULL;
     client->currentTheme = -1;
     client->currentQ = -1;
-    client->isResponding = false;
+    client->isResponding = true;
     client->state = WaitingForNickname;
-    return 1;
+    return -1;
 }
 
 //-------------------------------------------------------------------------------------------------------------
@@ -547,7 +548,7 @@ int sendAllBytes(struct ClientInfo* client, void *buf, uint32_t len) {
         client->sendBuf.buffer = malloc(len);
         if(client->sendBuf.buffer == NULL)
             return -1; //propagazione della gestione dell'errore
-        strcpy(client->sendBuf.buffer, buf);
+        memcpy(client->sendBuf.buffer, buf,len);
         client->sendBuf.totLen = len;
         client->sendBuf.progress = 0;
     }

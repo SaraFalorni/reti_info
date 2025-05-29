@@ -330,7 +330,7 @@ void endGame(int client_fd,char* nickname) {
     strcpy(nickname, "");
     
     //torna al main menu
-   
+   close(client_fd);
 }
 
 //-------------------------------------------------------------------------------------------------------------

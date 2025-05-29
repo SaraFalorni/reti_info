@@ -62,6 +62,7 @@ bool assignClientToSet(int client_fd, struct ClientSet* sets, int* numSets) {
             sets[i].clients[sets[i].numClients].currentQ = -1;
             sets[i].clients[sets[i].numClients].state = WaitingForNickname;
             sets[i].clients[sets[i].numClients].isResponding = true;//il primo messaggio è il nickname, inviato dal client
+            sets[i].FDUpdateNeeded = true; //perchè si è aggiunto un client
             sets[i].numClients++;
             return true;
         }
@@ -83,6 +84,7 @@ bool assignClientToSet(int client_fd, struct ClientSet* sets, int* numSets) {
         sets[*numSets].clients[0].currentQ = -1;
         sets[*numSets].clients[0].state = WaitingForNickname;
         sets[*numSets].clients[0].isResponding = true;//il primo messaggio è il nickname, inviato dal client
+        sets[*numSets].FDUpdateNeeded = true; //perchè si è aggiunto un client
 
         if(pthread_create(&sets[(*numSets)].thread, NULL, clientHandler, &sets[(*numSets)]) != 0) {
             perror("Errore nella creazione del thread");
@@ -105,10 +107,10 @@ bool assignClientToSet(int client_fd, struct ClientSet* sets, int* numSets) {
 void removeClientFromSet(int n,struct ClientSet* set) {
     
     //libera la memoria del nickname del client da eliminare
-    if(set->clients[n].nickname != NULL) {
+    /*if(set->clients[n].nickname != NULL) { cancellare
         free(set->clients[n].nickname);
         set->clients[n].nickname = NULL;
-    }
+    }*/
 
     //rimuove il client dal ClientSet e compatta i client restanti
     for(int j = n; j < set->numClients-1; j++) {
@@ -117,24 +119,30 @@ void removeClientFromSet(int n,struct ClientSet* set) {
         set->clients[j].currentQ = set->clients[j+1].currentQ;
         set->clients[j].state = set->clients[j+1].state;
         set->clients[j].isResponding = set->clients[j+1].isResponding;
+        free(set->clients[j].nickname);
 
         //copia del nickname
-        free(set->clients[j].nickname);
-        set->clients[j].nickname = malloc(strlen(set->clients[j+1].nickname)+1);
-        if(set->clients[j].nickname == NULL) {
-            //errore nel malloc
-            perror("errore nel malloc");
-            close(set->clients[j].client_fd);
-
-            set->clients[j].client_fd = -1;
-            set->numClients--;
-            continue;
-
+        if(set->clients[j+1].nickname != NULL) {
+            set->clients[j].nickname = malloc(strlen(set->clients[j+1].nickname)+1);
+            if(set->clients[j].nickname == NULL) {
+                //errore nel malloc
+                perror("errore nel malloc");
+                close(set->clients[j].client_fd);
+    
+                set->clients[j].client_fd = -1;
+                set->numClients--;
+                continue;
+    
+            }
+            strcpy(set->clients[j].nickname,set->clients[j+1].nickname);
         }
-        strcpy(set->clients[j].nickname,set->clients[j+1].nickname);
+        else
+            set->clients[j].nickname = NULL;
+        
         
     }
     set->numClients--;
+    set->FDUpdateNeeded = true; //client è stato eliminato, deve aggiornare il set per select
 }
 
 
@@ -152,17 +160,28 @@ void* clientHandler(void* arg) {
     FD_ZERO(&master);
 
     //inizializzazione master con i client presenti nel set
-    for(int i = 0; i < set->numClients; i++) {
+    /*for(int i = 0; i < set->numClients; i++) { cancellare
         int fd = set->clients[i].client_fd;
         FD_SET(fd,&master);
         if(fd > fdmax)
             fdmax = fd;
-    }
+    }*/
 
     while(1) {
         printf("altro ciclo di while\n");
+        if(set->FDUpdateNeeded == true) {
+            //inizializzazione master con i client presenti nel set
+            FD_ZERO(&master);
+            fdmax = -1;
+            for(int i = 0 ; i < set->numClients; i++) {
+                int fd = set->clients[i].client_fd;
+                FD_SET(fd,&master);
+                if(fd > fdmax)
+                    fdmax = fd;
+            }
+            set->FDUpdateNeeded = false; //aggiornamento set fatto
+        }
         read_fds = master;
-
         //timeout
         struct timeval timeout;
         timeout.tv_sec = 0;
@@ -239,9 +258,12 @@ int handleWaitingForNickname(struct ClientInfo* client) {
     int res = getNickname(client);
     if( res <= 0)//gestisce la recezione del nickname e registra il nuovo player
         return res; 
-    if(client->nickname == NULL)
+    if(client->nickname == NULL) {
         //nel caso in cui getNickanme non sia andato a buon fine client->nickname non è inizializzato e quindi non può procedere con il flusso di gioco
+        client->isResponding = true;//il client deve inviare un nuovo nickname
         return 0;
+    }
+        
 
     //nickname acquisito, passa allo stato WaitingForTheme
     client->state = WaitingForTheme;
