@@ -120,9 +120,9 @@ int getNickname(struct ClientInfo* client) {
 //il nickname serve per un'eventuale endquiz durante il gioco
 int sendThemes(struct ClientInfo* client, char* nickname) {
     //manda un messaggio al client con il numero di temi e aspetta un feedback sulla ricezione di quest'ultimo
-    printf("in sendThemes prima del send\n");// cancellare
+    printf("in sendThemes prima del send %d\n", current_session.numThemes);// cancellare
     //manda il numero dei temi al client
-    int bytesSent = sendAllBytes(client, &current_session.numThemes, sizeof(current_session.numThemes));
+    int bytesSent = sendInt(client, current_session.numThemes);
     if( bytesSent < 0) {
         perror("Errore in send() del numero di temi");
         deletePlayer(nickname);
@@ -212,7 +212,7 @@ int recvThemes(struct ClientInfo* client, char* nickname) {
     //riceve dal client l'indice del tema a cui vuole giocare
     int themeChosen;
 
-    int bytesRec = recvAllBytes(client,&themeChosen,sizeof(int));
+    int bytesRec = recvInt(client,&themeChosen);
     if( bytesRec < 0) {
         perror("Disconnessione del client o errore.\n");
         deletePlayer(nickname);
@@ -457,7 +457,7 @@ int doShowScore(struct ClientInfo* client) {
             else if(bytesSent2 == 0)
                 return 0;
             //invio del punteggio del giocatore
-            int bytesSent3 = sendAllBytes(client,&current_player->themePoints[0],sizeof(int));
+            int bytesSent3 = sendInt(client,current_player->themePoints[0]);
             if( bytesSent3 < 0) { 
                 perror("Errore in send() del punteggio (ranking)");
                 deletePlayer(client->nickname);
@@ -562,7 +562,7 @@ int sendAllBytes(struct ClientInfo* client, void *buf, uint32_t len) {
         } 
         client->sendBuf.progress += bytesSent;
     }
-
+    printf("%s\n", client->sendBuf.buffer); //cancellare
     //se è uscito dal while vuol dire che l'invio è completo
     //resetta i campi di recvBuf
     free(client->sendBuf.buffer);
@@ -613,7 +613,7 @@ int sendString(struct ClientInfo* client, void *buf) {
     uint32_t len = (uint32_t)strlen(buf)+1;
     uint32_t netLen = htonl(len); //host to network
 
-    int lenSent = sendAllBytes(client,&netLen,sizeof(uint32_t));//manda la lunghezza della stringa
+    int lenSent = sendAllBytes(client,&netLen,sizeof(netLen));//manda la lunghezza della stringa
     if(lenSent <= 0)
         return lenSent; //errore o invio non finito
 
@@ -748,5 +748,23 @@ int sendString(struct ClientInfo* client, void *buf) {
     client->recvBuf.progress = 0;
     return 1;
 }*/ 
+
+//--------------------------------------------------------------------------------------------------------------------------
+int sendInt(struct ClientInfo* client, int val) {
+    uint32_t netVal = htonl(val);
+    return sendAllBytes(client,&netVal,sizeof(netVal));
+}
+
+//--------------------------------------------------------------------------------------------------------------------------
+int recvInt(struct ClientInfo* client, int* val) {
+    uint32_t netVal;
+    int res = recvAllBytes(client,&netVal,sizeof(netVal));
+
+    if(res <= 0)
+        return res;
+
+    *val = ntohl(netVal);
+    return 1;
+}
 
 

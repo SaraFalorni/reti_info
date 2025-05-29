@@ -81,11 +81,12 @@ void chooseNickname(int client_fd,char* nickname) {
 void showQuizThemes(int client_fd) {
     //riceve il numero di temi disponibili dal server
     int num_themes;
-        
-    if(recvAllBytes(client_fd, &num_themes, sizeof(num_themes)) <= 0) {
+    printf("prima di ricevere il num themes\n"); //cancellare
+    if(recvInt(client_fd, &num_themes) <= 0) {
         perror("Errore in recv() per il numero di temi disponibili");
         exit(EXIT_FAILURE);
     }
+    printf("dopo di ricevere il num themes %d\n",num_themes); //cancellare
     //server inizia a mandare i nomi dei temi disponibili 
     char *themes[num_themes];
   
@@ -94,9 +95,9 @@ void showQuizThemes(int client_fd) {
         //riceve la stringa con il nome del i-esimo tema
         uint32_t len = recvStringLen(client_fd); //riceve la lunghezza della stringa
         themes[i] = safeMalloc(len);
-  
+        printf("prima di ricevere il  theme\n"); //cancellare
         recvAllBytes(client_fd,themes[i],len);//riceve la stringa       
-        
+        printf("dopo di ricevere il num theme %s\n", themes[i]); //cancellare
         //se il server ha mandato una stringa vuota " "
         //vuol dire che quel tema non è disponibile (perchè ci ha già giocato)       
     }
@@ -150,7 +151,7 @@ void showQuizThemes(int client_fd) {
     choice = choice - 1;
     
     //manda la scelta fatta al server
-    if(sendAllBytes(client_fd, &choice, sizeof(int)) <= 0) {
+    if(sendInt(client_fd, choice) <= 0) {
         perror("Errore in send() del tema scelto");
         exit(EXIT_FAILURE);
     }
@@ -310,7 +311,7 @@ void showScore(int client_fd) {
           
           //riceve il punteggio del k-esimo classificato dell'i-esimo tema
           int points;
-          if(recvAllBytes(client_fd,&points, sizeof(int)) <= 0) {
+          if(recvInt(client_fd,&points) <= 0) {
               perror("Errore nella ricezione del punteggio (ranking)");
               exit(EXIT_FAILURE);
           }
@@ -466,4 +467,22 @@ void manageErrRecv(int client_fd) {
     
     close(client_fd);
     exit(EXIT_FAILURE);
+}
+
+//--------------------------------------------------------------------------------------------------------------------------
+int sendInt(int client_fd, int val) {
+    uint32_t netVal = htonl(val);
+    return sendAllBytes(client_fd,&netVal,sizeof(netVal));
+}
+
+//--------------------------------------------------------------------------------------------------------------------------
+int recvInt(int client_fd, int* val) {
+    uint32_t netVal;
+    int res = recvAllBytes(client_fd,&netVal,sizeof(netVal));
+
+    if(res <= 0)
+        return res;
+
+    *val = ntohl(netVal);
+    return 1;
 }

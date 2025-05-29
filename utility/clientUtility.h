@@ -23,5 +23,6 @@ void removeSpaces(char* str);
 void* safeMalloc(int size);
 void manageErrSend(int client_fd); 
 void manageErrRecv(int client_fd);
-
+int sendInt(int client_fd, int val);
+int recvInt(int client_fd, int* val);
 #endif
