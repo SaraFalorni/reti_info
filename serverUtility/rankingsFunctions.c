@@ -163,7 +163,7 @@ void printRankings(struct Player** rankings) {
             printf("\nPunteggio tema %d\n",i+1);
         
         while(current_player != NULL) {
-            printf("- %s %d\n",current_player->nickname, *current_player->themePoints);
+            printf("- %s %d\n",current_player->nickname, current_player->themePoints[i]);
             current_player = current_player->next;
         }
     }
@@ -178,13 +178,15 @@ void printCompletedQuiz(struct Player** rankings) {
         struct Player* current_player = rankings[i];
         first = true;
             
-        while(current_player != NULL && *current_player->themeCompleted == true) {
-            if(first) {//stampa il titolo del quiz se è il primo giocatore ad averlo completato 
-                printf("\nQuiz Tema %d completato\n",i+1);
-                first = false;
+        while(current_player != NULL) {
+            if(current_player->themeCompleted[i] == true) {
+                if(first) {//stampa il titolo del quiz se è il primo giocatore ad averlo completato 
+                    printf("\nQuiz Tema %d completato\n",i+1);
+                    first = false;
+                }
+                
+                printf("- %s\n",current_player->nickname);   
             }
-            
-            printf("- %s\n",current_player->nickname);
             current_player = current_player->next;
         }
     }

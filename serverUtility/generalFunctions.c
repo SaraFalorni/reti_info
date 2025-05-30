@@ -78,7 +78,7 @@ bool assignClientToSet(int client_fd, struct ClientSet* sets, int* numSets) {
         }
 
         //caso in cui un thread morto sia disponibile
-        if(sets[i].numClients == 0) {
+        /*if(sets[i].numClients == 0 ) {
             sets[i].numClients = 1;
              //inserisce il client come primo client del nuovo set
             sets[i].clients[0].client_fd = client_fd;
@@ -103,7 +103,7 @@ bool assignClientToSet(int client_fd, struct ClientSet* sets, int* numSets) {
             }
     
             return true;
-        }
+        }*/
 
         //se non c'è posto controlla il set successivo
     }
@@ -133,11 +133,17 @@ bool assignClientToSet(int client_fd, struct ClientSet* sets, int* numSets) {
         sets[setIndex].clients[0].sendBuf.totLen = 0;
         pthread_mutex_unlock(&lockSets);
 
-        if(pthread_create(&sets[setIndex].thread, NULL, clientHandler, &sets[setIndex]) != 0) {
+        pthread_attr_t attr;
+        pthread_attr_init(&attr);
+        pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+
+        if(pthread_create(&sets[setIndex].thread, &attr, clientHandler, &sets[setIndex]) != 0) {
             perror("Errore nella creazione del thread");
             close(client_fd);
+            pthread_attr_destroy(&attr);
             return false;
         }
+        pthread_attr_destroy(&attr);
 
         return true;
     }
@@ -252,6 +258,10 @@ void* clientHandler(void* arg) {
 
         //se non ci sono più client nel thread questo viene chiuso
         if(set->numClients == 0) {
+            pthread_mutex_lock(&lockSets);
+            set->FDUpdateNeeded = false;
+            set->thread = 0;
+            pthread_mutex_unlock(&lockSets);
             pthread_exit(NULL);
         }
         

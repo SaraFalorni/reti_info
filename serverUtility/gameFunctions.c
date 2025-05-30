@@ -387,7 +387,7 @@ int doShowScore(struct ClientInfo* client) {
             else if(bytesSent2 == 0)
                 return 0;
             //invio del punteggio del giocatore
-            int bytesSent3 = sendInt(client,current_player->themePoints[0]);
+            int bytesSent3 = sendInt(client,current_player->themePoints[i]);
             if( bytesSent3 < 0) { 
                 perror("Errore in send() del punteggio (ranking)");
                 deletePlayer(client->nickname);

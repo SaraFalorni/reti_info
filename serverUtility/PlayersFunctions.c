@@ -149,7 +149,7 @@ struct Player* copyPlayer(struct Player* current_player,int index_theme,int clie
         return NULL;
     }
     
-    player_copy->themePoints[0] = current_player->themePoints[index_theme];
+    player_copy->themePoints[index_theme] = current_player->themePoints[index_theme];
     
     //memorizza anche se il tema è stato completato o meno (serve per la funzione printCompletedQuiz
     //basta memorizzare il punteggio relativo a solo quel tema
@@ -162,7 +162,7 @@ struct Player* copyPlayer(struct Player* current_player,int index_theme,int clie
         free(player_copy);
         return NULL;
     }
-    player_copy->themeCompleted[0] = current_player->themeCompleted[index_theme];
+    player_copy->themeCompleted[index_theme] = current_player->themeCompleted[index_theme];
     
     player_copy->next = NULL;
     return player_copy;

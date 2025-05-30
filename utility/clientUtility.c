@@ -219,7 +219,7 @@ void playGame(int client_fd,char* nickname) {
 void sendAnswer(int client_fd,char* risp) {
     //manda la stringa
     if(sendString(client_fd,risp) <= 0) { 
-        perror("Errore in send() della domanda");
+        perror("Errore in send() della risposta");
         exit(EXIT_FAILURE);
     }
    
@@ -371,8 +371,13 @@ uint32_t recvAllBytes(int client_fd, void *buf,uint32_t len) {
     while(totSent < len) {
       bytesSent = send(client_fd,buf+totSent,len-totSent,0);
       if(bytesSent <= 0) {
+        if(errno == EPIPE || errno == ECONNRESET)
           //gestione errore
           manageErr(client_fd);
+        else {
+            perror("errore in send()");
+            manageErr(client_fd);
+        }
       }
       
       totSent += bytesSent;
@@ -407,9 +412,9 @@ int sendString(int client_fd, void *buf) {
   sendAllBytes(client_fd,&netLen,sizeof(netLen));//manda la lunghezza della stringa
   
   //manda la stringa
-  int bytesSent = sendAllBytes(client_fd,buf,len);
+  sendAllBytes(client_fd,buf,len);
   
-  return bytesSent;
+  return 1;
 }
 
 //-------------------------------------------------------------------------------------------------------------
