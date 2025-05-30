@@ -74,36 +74,22 @@ bool assignClientToSet(int client_fd, struct ClientSet* sets, int* numSets) {
             sets[i].clients[sets[i].numClients].sendBuf.totLen = 0;
             sets[i].numClients++;
             pthread_mutex_unlock(&lockSets);
+
+            if(sets[i]. numClients == 1) {// se è il primo client avvio il thread
+                pthread_attr_t attr;
+                pthread_attr_init(&attr);
+                pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+
+                if(pthread_create(&sets[i].thread, &attr, clientHandler, &sets[i]) != 0) {
+                    perror("Errore nella creazione del thread");
+                    close(client_fd);
+                    pthread_attr_destroy(&attr);
+                    return false;
+                }
+                pthread_attr_destroy(&attr);
+            }
             return true;
         }
-
-        //caso in cui un thread morto sia disponibile
-        /*if(sets[i].numClients == 0 ) {
-            sets[i].numClients = 1;
-             //inserisce il client come primo client del nuovo set
-            sets[i].clients[0].client_fd = client_fd;
-            sets[i].clients[0].nickname = NULL;
-            sets[i].clients[0].currentTheme = -1;
-            sets[i].clients[0].currentQ = -1;
-            sets[i].clients[0].state = WaitingForNickname;
-            sets[i].clients[0].isResponding = true;//il primo messaggio è il nickname, inviato dal client
-            sets[i].FDUpdateNeeded = true; //perchè si è aggiunto un client
-            sets[i].clients[0].recvBuf.progress = 0;
-            sets[i].clients[0].recvBuf.buffer = NULL;
-            sets[i].clients[0].recvBuf.totLen = 0;
-            sets[i].clients[0].sendBuf.progress = 0;
-            sets[i].clients[0].sendBuf.buffer = NULL;
-            sets[i].clients[0].sendBuf.totLen = 0;
-            pthread_mutex_unlock(&lockSets);
-
-            if(pthread_create(&sets[i].thread, NULL, clientHandler, &sets[i]) != 0) {
-                perror("Errore nella creazione del thread");
-                close(client_fd);
-                return false;
-            }
-    
-            return true;
-        }*/
 
         //se non c'è posto controlla il set successivo
     }
