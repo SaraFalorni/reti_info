@@ -6,7 +6,7 @@
 #define SERVER_IP "127.0.0.1"
 #define NUM_Q 5 //numero di domande per ogni tema
 #define NUM_THEMES 5 //numero di temi disponibili 
-#define MAX_CLIENT_IN_THREAD 2
+#define MAX_CLIENT_IN_THREAD 15
 #define MAX_CLIENTSETS 15
 
 enum ClientState {WaitingForNickname, WaitingForTheme, PlayingQuiz};
