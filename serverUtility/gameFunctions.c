@@ -7,51 +7,28 @@
 
 //funzione che interagisce con il client per ottenere il nuovo nickname
 //ha come parametri il socket e una stringa vuota
-int getNickname(struct ClientInfo* client) {
-    //char* nickname;
-    
-    //while(1) {
-        //riceve il nickname dal client recvString cancellare
-        /*int len = recvStringLen(client_fd);
-        if(len < 0) {
-            perror("Errore nella ricezione della lunghezza del nickname\n");
-            return -1;//gestito in manageClientGame
-        }
-        else if(len == 0)
-            return 0;//gestito in manageClientGame
-
-        nickname = malloc(len);
-        //gestion errore malloc
-        if(nickname == NULL) {
-            perror("Errore nel malloc del nickname\n");
-            return -1;//gestito in manageClientGame
-        }*/
-    
+int getNickname(struct ClientInfo* client) {   
     if(client->isResponding == true) {
         //caso in cui il client non ha ancora inserito un nickname valido
-        printf("entra in getNickname isResponding %d\n",client->isResponding);//cancellare
+        
         //ricezione lunghezza stringa
         uint32_t netLen = 0;
-        printf("prima della ricezione lunghezza\n"); //cancellare
         int lenRecv = recvAllBytes(client,&netLen,sizeof(uint32_t));//riceve la lunghezza della stringa
         if(lenRecv <= 0) 
             return lenRecv; //socket non ancora pronto o errore
         
         uint32_t len = ntohl(netLen); //da network a host
-        printf("lunghezza nickname: %d\n",len);//cancellare
+        
         char* nickname = malloc(len);
         if(nickname == NULL)
             return -1; //gestione errore propagata
         int bytesRec = recvAllBytes(client,nickname,len);
-        //int bytesRec = recvString(client,&nickname); cancellare
         if( bytesRec <= 0) 
             return bytesRec; //-1 se c'è stato errore, 0 se socket non pronto, gestito da manageClientGame
-            printf("nickname: %s\n",nickname);//cancellare
-        printf("prima di insert\n");//cancellare
+    
         //se l'inserimento va a buon fine manda un messaggio di conferma al client, altrimenti manda un messaggio di errore e chiede nuovamente un nickname
         int insert = insertPlayer(nickname,client->client_fd);
-        printf("insert risulted: %d\n",insert);//cancellare
-        if( insert == -1)
+        if( insert == -1)//errore 
             return -1;
         else if( insert == 1) {  
             //inserisce il nickname nel ClientInfo
@@ -75,14 +52,6 @@ int getNickname(struct ClientInfo* client) {
                 return -1; 
             strcpy(client->sendBuf.buffer,MSG_OK);
             client->sendBuf.progress = 0;
-                                /*int bytesSent = sendAllBytes(client->client_fd, MSG_OK, MSG_LEN); cancellare
-                                if( bytesSent < 0) {
-                                    perror("Errore in send() dell'ok al nickname");
-                                    return -1;//gestito in manageClientGame
-                                } 
-                                else if(bytesSent == 0)
-                                    return 0; //socket non pronto, gestito in manageClientGame  */ 
-                            // break;//esce dal while solo dopo un inserimento avvenuto con successo cancellare
         }
         else if( insert == 0){
             client->isResponding = false; //il nickname è stato ricevuto dal client, passa alla fase di conferma/rifiuto
@@ -95,17 +64,8 @@ int getNickname(struct ClientInfo* client) {
                 return -1; 
             strcpy(client->sendBuf.buffer,MSG_NO);
             client->sendBuf.progress = 0;
-            /*//messaggio non ok al client cancellare
-            int bytesSent = sendAllBytes(client->client_fd, MSG_NO, MSG_LEN);
-            if( bytesSent < 0) {
-                    perror("Errore in send() del no al nickname");
-                    return -1;//gestito in manageClientGame
-                } 
-            else if(bytesSent == 0)
-                return 0;//gestito in manageClientGame*/
         }
-        //strcpy(name,nickname);//copia in name il nickname dato dal client cancellare
-        //free(nickname);
+        
     }
 
     //fase di invio del feedback sul nickname già ricevuto
@@ -123,7 +83,7 @@ int getNickname(struct ClientInfo* client) {
 //il nickname serve per un'eventuale endquiz durante il gioco
 int sendThemes(struct ClientInfo* client, char* nickname) {
     //manda un messaggio al client con il numero di temi e aspetta un feedback sulla ricezione di quest'ultimo
-    printf("in sendThemes prima del send %d\n", current_session.numThemes);// cancellare
+    
     //manda il numero dei temi al client
     int bytesSent = sendInt(client, current_session.numThemes);
     if( bytesSent < 0) {
@@ -132,8 +92,8 @@ int sendThemes(struct ClientInfo* client, char* nickname) {
         return -1;//gestito in manageClientGame
     }
     else if(bytesSent == 0)
-        return 0;
-    printf("in sendThemes dopo prima send\n");// cancellare
+        return 0;//socket non pronto
+    
     //il numero dei temi è stato ricevuto correttamente prosegue mandando il nome di ogni tema, uno per volta         
       for(int i = 0; i < NUM_THEMES ; i++) {
         //controllo se il giocatore ha già giocato l'i-esimo tema
@@ -142,7 +102,7 @@ int sendThemes(struct ClientInfo* client, char* nickname) {
         pthread_mutex_lock(&lockPlayers);
         
         struct Player* ptr = getPlayer(current_session.players,nickname);
-        printf("getPlayer controllo temi\n");// cancellare
+        
         //unlock mutex
         pthread_mutex_unlock(&lockPlayers);
         char* buf;//buffer ausiliaro che contiene la stringa da inviare al client
@@ -157,16 +117,6 @@ int sendThemes(struct ClientInfo* client, char* nickname) {
                 return -1;//gestito in manageClientGame
             }
             strcpy(buf," ");//indica il tema non disponibile
-                //char* emptyStr = " ";//indica il tema non disponibile cancellare
-
-                /*int bytesSent = sendString(client, emptyStr); cancellare
-                if( bytesSent < 0) { //invio della stringa vuota per indicare che non è un tema disponibile
-                    perror("Errore in send() del nome del tema");
-                    deletePlayer(nickname);
-                    return -1;//gestito in manageClientGame
-                } 
-                else if (bytesSent == 0)
-                    return 0;*/
         }
         //client non ha ancora giocato al quiz di quel tema
         //viene inviata la lunghezza della stringa e poi la stringa contenente il nome del tema
@@ -178,18 +128,8 @@ int sendThemes(struct ClientInfo* client, char* nickname) {
                 return -1;//gestito in manageClientGame
             }
             strcpy(buf,current_session.availableThemes[i].name);
-
-
-            /*int bytesSent = sendString(client,current_session.availableThemes[i].name);
-            if( bytesSent < 0) { //invio della stringa (nome dell'i-esimo tema)
-                perror("Errore in send() del nome del tema");
-                deletePlayer(nickname); cancellare
-                return -1;//gestito in manageClientGame
-            }
-            else if (bytesSent == 0)
-                return 0;*/ 
         }
-        printf("in sendThemes dopo prima send %s\n",buf);// cancellare
+        
         //invio della stringa buf
         int bytesSent = sendString(client,buf);
         if( bytesSent < 0) { //invio della stringa (nome dell'i-esimo tema)
@@ -199,9 +139,8 @@ int sendThemes(struct ClientInfo* client, char* nickname) {
         }
         else if (bytesSent == 0)
             return 0;
-        printf("in sendThemes dopo send %s\n", buf);// cancellare
      } 
-     printf("in sendThemes fine\n");// cancellare
+     
      return 1;//conclusa correttamente
 }
 
@@ -262,7 +201,7 @@ int recvCommand(struct ClientInfo* client) {
     int command = checkCommand(client,msg); 
     switch(command) {
         case 1:
-            return 1;
+            return 1;//ha fatto showscore
         break;
         case 2:
             return -1;//endquiz, voglio che il client sia eliminato dal set
@@ -276,19 +215,6 @@ int recvCommand(struct ClientInfo* client) {
         break;
     }
     return -1;//errore 
-    /*if( command == 1 || command == 2) {//show score o endquiz
-        return 1;
-    }
-    else if
-    else if(command == 0) {
-        //il client ha effettivamente dato la risposta
-        if(recvResponse(client) == -1)
-            return -1;
-        else
-            return 1;
-    }
-    else    
-        return -1;*/
 }
 
 //-------------------------------------------------------------------------------------------------------------
@@ -297,22 +223,7 @@ int recvResponse(struct ClientInfo* client) {
     
     //RICEZIONE DELLA RISPOSTA E VALUTAZIONE DI ESSA  
     
-    //riceve la risposta (sempre ricevendo prima il numero di byte)    recvString
-    /*int len = recvStringLen(client->client_fd);
-    if(len < 0) {
-        perror("Errore nella ricezione della lunghezza della risposta\n");
-        return -1;//gestito in manageClientGame
-    }
-    else if(len == 0)
-        return 0;//gestito in manageClientGame
-
-    char* bufR = malloc(len);
-    //gestione errore nel malloc
-    if(bufR == NULL) {
-        perror("Errore nel malloc della risposta\n");
-        deletePlayer(client->nickname);
-        return -1;//gestito in manageClientGame
-    }        */
+    //riceve la risposta (sempre ricevendo prima il numero di byte)    
 
     //ricezione lunghezza stringa
     uint32_t netLen = 0;
@@ -328,7 +239,6 @@ int recvResponse(struct ClientInfo* client) {
         return -1;//gestito in manageClientGame
     }
     int bytesRec = recvAllBytes(client, bufR,len);
-    //int bytesRec = recvString(client->client_fd,bufR); cancellare
     if( bytesRec < 0) {
         perror("Disconnessione del client o errore.\n");
         deletePlayer(client->nickname);
@@ -540,24 +450,6 @@ int recvAllBytes(struct ClientInfo* client, void *buf, uint32_t len) {
     client->recvBuf.totLen = 0;
     client->recvBuf.progress = 0;
     return 1;
-
-
-
-  /*uint32_t totRec = 0; cancellare
-  uint32_t bytesRec = 0;
-  
-  while(totRec < len) {
-    bytesRec = recv(client_fd,buf+totRec,len-totRec,0);
-    if(bytesRec < 0){
-        if(errno == EAGAIN || errno == EWOULDBLOCK)
-            return totRec;//ritorno parziale
-        else
-            return -1;
-    }      
-    totRec += bytesRec;
-  }
-  
-  return totRec;*/
 }
 
 //-------------------------------------------------------------------------------------------------------------
@@ -583,7 +475,6 @@ int sendAllBytes(struct ClientInfo* client, void *buf, uint32_t len) {
         } 
         client->sendBuf.progress += bytesSent;
     }
-    printf("%s\n", client->sendBuf.buffer); //cancellare
     //se è uscito dal while vuol dire che l'invio è completo
     //resetta i campi di recvBuf
     free(client->sendBuf.buffer);
@@ -591,41 +482,7 @@ int sendAllBytes(struct ClientInfo* client, void *buf, uint32_t len) {
     client->sendBuf.totLen = 0;
     client->sendBuf.progress = 0;
     return 1;
-  /*uint32_t totSent = 0; cancellare
-  uint32_t bytesSent = 0;
-  
-  while(totSent < len) {
-    bytesSent = send(client_fd,buf+totSent,len-totSent,0);
-    if(bytesSent < 0) {
-        if(errno == EAGAIN || errno == EWOULDBLOCK)
-            return totSent;//ritorno parziale
-        else
-            return -1;
-    }
-
-    totSent += bytesSent;
-  }
-  
-  return totSent;*/
 }
-
-//-------------------------------------------------------------------------------------------------------------
-
-//funzione che gestisce la ricezione di una stringa
-//ricevendo prima la lunghezza e successivamente la stringa stessa
-//ritorna il puntatore alla stringa cancellare
-/*int recvStringLen(int client_fd) {
-  //riceve prima la lunghezza della stringa
-  uint32_t netLen;
-  
-  int bytesRec = recvAllBytes(client_fd,&netLen,sizeof(netLen));
-  if(bytesRec < 0) 
-    return -1;
-  
-  uint32_t len = ntohl(netLen); //da network a host
-  
-  return len;
-}*/
 
 //-------------------------------------------------------------------------------------------------------------
 
@@ -646,137 +503,17 @@ int sendString(struct ClientInfo* client, void *buf) {
     
     return 1;
 
-    //caso in cui non sia ancora stato mandato niente cancellare
-   /* if(client->sendBuf.totLen == 0) {
-        uint32_t len = (uint32_t)strlen(buf)+1;
-        uint32_t netLen = htonl(len); //host to network
-
-        client->sendBuf.totLen = sizeof(uint32_t) + netLen;
-        client->sendBuf.buffer = malloc(client->sendBuf.totLen+1);
-        if(client->sendBuf.buffer == NULL)
-            return -1; //gestito in manageClientGame
-        //nel buffer ci scrive sia la lunghezza che la stringa
-        memcpy(client->sendBuf.buffer, &netLen, sizeof(uint32_t));//lunghezza della stringa
-        memcpy(client->sendBuf.buffer + sizeof(uint32_t), buf, netLen);//stringa stessa
-        client->sendBuf.progress = 0;
-    }
-
-    //invia la parte del buffer rimanente
-    int lenSent = sendAllBytes(client->client_fd,client->sendBuf.buffer+client->sendBuf.progress,client->sendBuf.totLen-client->sendBuf.progress);//manda la lunghezza della stringa
-
-    if(lenSent < 0) {
-        //errore 
-        free(client->sendBuf.buffer);
-        client->sendBuf.totLen = 0;
-        client->sendBuf.buffer = NULL;
-        client->sendBuf.progress = 0;
-        return -1;
-    }
-
-    //aggiorno progress nella struttura dati
-    client->sendBuf.progress += lenSent;
-
-    //caso in cui l'invio non sia completo
-    if(client->sendBuf.progress < client->sendBuf.totLen)
-        return 0;
-
-    //caso in cui l'invio sia completato
-    free(client->sendBuf.buffer);
-    client->sendBuf.totLen = 0;
-    client->sendBuf.buffer = NULL;
-    client->sendBuf.progress = 0;
-    return 1;
-
-
-
-  //lunghezza della stringa cancellare
-  uint32_t len = (uint32_t)strlen(buf)+1;
-  uint32_t netLen = htonl(len); //host to network
-  
-  int lenSent = sendAllBytes(client->client_fd,&netLen,sizeof(netLen));//manda la lunghezza della stringa
-  if(lenSent < 0)
-    return -1;   
-  
-  //manda la stringa
-  int bytesSent = sendAllBytes(client->client_fd,buf,len);
-  if(bytesSent < 0)
-    return -1;
-  
-  return bytesSent;*/
 }
 
-//-------------------------------------------------------------------------------------------------------------
-// cancellare
-//funzione che gestisce la ricezione di una stringa, ricevendo prima la lunghezza e successivamente la stringa stessa
-/*int recvString(struct ClientInfo* client, void **buf) {
-    //caso in cui non sia ancora stato ricevuto niente
-    if(client->recvBuf.totLen == 0) {
-        uint32_t netLen = 0;
-        int lenRecv = recvAllBytes(client,&netLen,sizeof(uint32_t));//riceve la lunghezza della stringa
-        if(lenRecv <= 0) 
-            return lenRecv; //socket non ancora pronto o errore
-            
-        uint32_t len = ntohl(netLen); //da network a host
-
-        *buf = malloc(len);//buffer dove ricevere la stringa
-        if(buf == NULL) {
-            //errore 
-            return -1;
-        }
-    }
-
-    //ricezione della stringa
-
-
-    //riceve la parte del buffer rimanente cancellare
-    int lenRecv = recvAllBytes(client->client_fd,client->recvBuf.buffer+client->recvBuf.progress,client->recvBuf.totLen-client->recvBuf.progress);//riceve la stringa
-
-    if(lenRecv < 0) {
-        //errore 
-        free(client->recvBuf.buffer);
-        client->recvBuf.totLen = 0;
-        client->recvBuf.buffer = NULL;
-        client->recvBuf.progress = 0;
-        return -1;
-    }
-    if(lenRecv == 0)
-        return 0;//socket non pronto
-
-    //aggiorno progress nella struttura dati
-    client->recvBuf.progress += lenRecv;
-
-    //caso in cui l'invio non sia completo
-    if(client->recvBuf.progress < client->recvBuf.totLen)
-        return 0;//socket non pronto
-
-    //caso in cui l'invio sia completato
-
-    //scrive in buf la stringa
-    *buf = malloc(client->recvBuf.totLen);
-    if(buf == NULL) {
-        //errore 
-        free(client->recvBuf.buffer);
-        client->recvBuf.totLen = 0;
-        client->recvBuf.buffer = NULL;
-        client->recvBuf.progress = 0;
-        return -1;
-    }
-    strcpy(*buf,client->recvBuf.buffer);
-    //resetta
-    free(client->recvBuf.buffer);
-    client->recvBuf.totLen = 0;
-    client->recvBuf.buffer = NULL;
-    client->recvBuf.progress = 0;
-    return 1;
-}*/ 
-
 //--------------------------------------------------------------------------------------------------------------------------
+//funzione che gestisce l'invio di un intero
 int sendInt(struct ClientInfo* client, int val) {
     uint32_t netVal = htonl(val);
     return sendAllBytes(client,&netVal,sizeof(netVal));
 }
 
 //--------------------------------------------------------------------------------------------------------------------------
+//funzione che gestisce la ricezione di un intero
 int recvInt(struct ClientInfo* client, int* val) {
     uint32_t netVal;
     int res = recvAllBytes(client,&netVal,sizeof(netVal));

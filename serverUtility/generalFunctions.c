@@ -117,7 +117,6 @@ bool assignClientToSet(int client_fd, struct ClientSet* sets, int* numSets) {
         int setIndex = *numSets;
         (*numSets)++;
         sets[setIndex].numClients = 1;
-        printf("%d %d\n", setIndex, *numSets);
         //inserisce il client come primo client del nuovo set
         sets[setIndex].clients[0].client_fd = client_fd;
         sets[setIndex].clients[0].nickname = NULL;
@@ -133,7 +132,6 @@ bool assignClientToSet(int client_fd, struct ClientSet* sets, int* numSets) {
         sets[setIndex].clients[0].sendBuf.buffer = NULL;
         sets[setIndex].clients[0].sendBuf.totLen = 0;
         pthread_mutex_unlock(&lockSets);
-        printf("is responding %d\n",sets[setIndex].clients[0].isResponding); //cancellare
 
         if(pthread_create(&sets[setIndex].thread, NULL, clientHandler, &sets[setIndex]) != 0) {
             perror("Errore nella creazione del thread");
@@ -151,12 +149,6 @@ bool assignClientToSet(int client_fd, struct ClientSet* sets, int* numSets) {
 
 //elimina n-esimo client dal set
 void removeClientFromSet(int n,struct ClientSet* set) {
-    
-    //libera la memoria del nickname del client da eliminare
-    /*if(set->clients[n].nickname != NULL) { cancellare
-        free(set->clients[n].nickname);
-        set->clients[n].nickname = NULL;
-    }*/
     pthread_mutex_lock(&lockSets);
     //rimuove il client dal ClientSet e compatta i client restanti
     for(int j = n; j < set->numClients-1; j++) {
@@ -206,16 +198,7 @@ void* clientHandler(void* arg) {
 
     FD_ZERO(&master);
 
-    //inizializzazione master con i client presenti nel set
-    /*for(int i = 0; i < set->numClients; i++) { cancellare
-        int fd = set->clients[i].client_fd;
-        FD_SET(fd,&master);
-        if(fd > fdmax)
-            fdmax = fd;
-    }*/
-
     while(1) {
-        printf("altro ciclo di while\n");
         if(set->FDUpdateNeeded == true) {
             //inizializzazione master con i client presenti nel set
             FD_ZERO(&master);
@@ -238,9 +221,7 @@ void* clientHandler(void* arg) {
             perror("errore nel select");
             continue;
         }
-        printf("num clients: %d\n", set->numClients); //cancellare
         for(int i = 0 ; i < set->numClients; i++) {
-            printf("client[%d] : %d nickname : %s\n", i, set->clients[i].client_fd, set->clients[i].nickname ? set->clients[i].nickname : "NULL"); //cancellare
 
             int fd = set->clients[i].client_fd;
             //se il client deve inviare qualcosa entra in manageClientGame
@@ -249,7 +230,7 @@ void* clientHandler(void* arg) {
             //caso 2: aspetta una domanda del quiz
 
             if(FD_ISSET(fd, &read_fds) || set->clients[i].isResponding == false ) {
-                printf("is responding %d\n",set->clients[i].isResponding); //cancellare
+                
                 //gestione del client
                 if(manageClientGame(&set->clients[i]) < 0) {
                     //in caso di errore
@@ -316,7 +297,7 @@ int handleWaitingForNickname(struct ClientInfo* client) {
 
 //funzione che gestisce lo stato WaitingForTheme
 int handleWaitingForTheme(struct ClientInfo* client) {
-    printf("entra in handleWaitingForThemes\n");//cancellare
+    
     if(client->isResponding == false) {
         //se isResponding è false nello stato WaitingForTheme vuol dire che deve ancora ricevere i temi
         int res = sendThemes(client, client->nickname);
@@ -385,7 +366,7 @@ int manageClientGame(struct ClientInfo* client) {
             if( res1 == -1)
                 return -1;//gestito in ClientHandler 
             else if(res1 == 0)
-                return 0;   
+                return 0;   //socket non pronto, gestito il clientHandler
         break;
 
         case WaitingForTheme:

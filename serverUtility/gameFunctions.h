@@ -20,9 +20,7 @@ int doShowScore(struct ClientInfo* client) ;
 int doEndquiz(struct ClientInfo* client);
 int recvAllBytes(struct ClientInfo* client, void *buf, uint32_t len);
 int sendAllBytes(struct ClientInfo* client, void *buf, uint32_t len);
-//int recvStringLen(int client_fd); cancellare
 int sendString(struct ClientInfo* client, void *buf);
-//int recvString(struct ClientInfo* client, void **buf); cancellare
 int sendInt(struct ClientInfo* client, int val);
 int recvInt(struct ClientInfo* client, int* val);
 

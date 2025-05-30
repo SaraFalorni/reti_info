@@ -52,7 +52,7 @@ void chooseNickname(int client_fd,char* nickname) {
        //prima di inviare il nickname al server toglie '\n'
         if(nickname[strlen(nickname)-1] == '\n')
             nickname[strlen(nickname)-1] = '\0';
-        printf("nickname scelto %s\n",nickname); //cancellare
+        
         //manda il nickname scelto al server che risponde con MSG_OK se è utilizzabile, MSG_NO altrimenti  
         if(sendString(client_fd, nickname) <= 0) {
             perror("Errore in send() del nickname");
@@ -63,7 +63,7 @@ void chooseNickname(int client_fd,char* nickname) {
             perror("Errore in recv() di conferma nickname");
             exit(EXIT_FAILURE);
         }
-        printf("feedback %s\n",msg); //cancellare
+
         //nickname utilizzabile, giocatore registrato correttamento
         if(strcmp(msg,MSG_OK) == 0) {
             break;
@@ -80,12 +80,12 @@ void chooseNickname(int client_fd,char* nickname) {
 void showQuizThemes(int client_fd) {
     //riceve il numero di temi disponibili dal server
     int num_themes;
-    printf("prima di ricevere il num themes\n"); //cancellare
+    
     if(recvInt(client_fd, &num_themes) <= 0) {
         perror("Errore in recv() per il numero di temi disponibili");
         exit(EXIT_FAILURE);
     }
-    printf("dopo di ricevere il num themes %d\n",num_themes); //cancellare
+    
     //server inizia a mandare i nomi dei temi disponibili 
     char *themes[num_themes];
   
@@ -94,9 +94,7 @@ void showQuizThemes(int client_fd) {
         //riceve la stringa con il nome del i-esimo tema
         uint32_t len = recvStringLen(client_fd); //riceve la lunghezza della stringa
         themes[i] = safeMalloc(len);
-        printf("prima di ricevere il  theme\n"); //cancellare
         recvAllBytes(client_fd,themes[i],len);//riceve la stringa       
-        printf("dopo di ricevere il num theme %s\n", themes[i]); //cancellare
         //se il server ha mandato una stringa vuota " "
         //vuol dire che quel tema non è disponibile (perchè ci ha già giocato)       
     }
